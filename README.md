@@ -1,2 +1,0 @@
-# mksensors
-Easily create sensors
