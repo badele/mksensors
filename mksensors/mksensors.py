@@ -5,7 +5,9 @@
 Usage:
   mksensors init
   mksensors new SENSORNAME SENSORLIBRARYNAME [--param=<param>]...
-  mksensors exporter EXPORTERNAME PARAMS...
+  mksensors list
+  mksensors del SENSORNAME
+  mksensors senderconfig EXPORTERNAME [--param=<param>]...
   mksensors -h | --help
 
 Arguments:
@@ -23,11 +25,12 @@ __description__ = """Tool for easily create sensors daemons"""
 __license__ = 'GPL'
 __version__ = '0.0.1'
 
-
 import os
+import re
 import sys
 
 import lib
+import glob
 
 from docopt import docopt
 from distutils.spawn import find_executable
@@ -41,17 +44,43 @@ def convertParamToDict(params):
 
     return result
 
+def rootRequire():
+    if not os.geteuid() == 0:
+        sys.exit('This command must be run as root')
+
+
+
+
+def setExporterOptions():
+    pass
+
+
+def newSensor(sensorname, sensorlibraryname, **kwargs):
+
+    # Set default variable if is not set
+    if 'python' not in kwargs:
+        kwargs['python'] = sys.executable
+
+    lib.createSupervisorConf(
+        sensorname=sensorname,
+        sensorlibraryname=sensorlibraryname,
+        **kwargs
+    )
+
+
+def ListSensors():
+    supervisorfiles = glob.glob(os.path.join(lib.SUPERVISOCONF, "mks_*"))
+
+    for filename in supervisorfiles:
+        content = open(filename).read()
+        m = re.match(r".* (.*/__init__\.py)", content, re.DOTALL)
+        if m:
+            sensorfilename = m.group(1)
+            sensormod = lib.loadModule(sensorfilename)
+
+
 def initMkSensors():
     errormsg = ""
-
-    # Check if script run as root
-    if not os.geteuid() == 0:
-        sys.exit('Script must be run as root')
-
-    # Check Supervisorctl executable
-    executable = find_executable('supervisorctl')
-    if executable is None:
-        errormsg += "* Cannot find the supervisorctl executable\n"
 
     # Check Supervisorctl executable
     executable = find_executable('supervisorctl')
@@ -62,6 +91,29 @@ def initMkSensors():
     folderexists = os.path.isdir(lib.SUPERVISOCONF)
     if not folderexists:
         errormsg += "* Cannot find the %s folder\n" % lib.SUPERVISOCONF
+
+    # Create supervisor launcher
+    dirname = os.path.dirname(sys.executable)
+
+    executable = find_executable('systemctl')
+    if executable:
+        systemdconf = """[Unit]
+Description=Supervisor process control system for UNIX
+Documentation=http://supervisord.org
+After=network.target
+
+[Service]
+ExecStart=%(dirname)s/supervisord -n -c /etc/supervisord.conf
+ExecStop=%(dirname)s/supervisorctl shutdown
+ExecReload=%(dirname)s/supervisorctl reload
+KillMode=process
+Restart=on-failure
+RestartSec=50s
+
+[Install]
+WantedBy=multi-user.target""" % locals()
+
+        lib.saveto('/etc/systemd/system/supervisord.service', systemdconf)
 
     # Check and create /etc/mksensors folder
     folderexists = os.path.isdir('/etc/mksensors')
@@ -78,39 +130,26 @@ def initMkSensors():
         print errormsg
 
 
-def setExporterOptions():
-    pass
-
-
-def newSensors(**kwargs):
-
-    # Try to load the sensor module
-    try:
-        modsensor = __import__(argopts['SENSORLIBRARYNAME'], fromlist=[argopts['SENSORLIBRARYNAME']])
-    except ImportError:
-        raise Exception("Can't Load module argopts['SENSORLIBRARYNAME']")
-
-
-    # Set default variable if is not set
-    if 'python' not in kwargs:
-        kwargs['python'] = sys.executable
-
-    # Execute init sensor module
-    modsensor.init(**kwargs)
-
-
 if __name__ == '__main__':
+
     argopts = docopt(__doc__)
+
+    # Force use root account
+    rootRequire()
 
     if argopts['init']:
         initMkSensors()
 
-    if argopts['exporter']:
-        setExporterOptions()
-
     if argopts['new']:
-        newSensors(
+        newSensor(
             sensorname=argopts['SENSORNAME'],
+            sensorlibraryname=argopts['SENSORLIBRARYNAME'],
             **convertParamToDict(argopts['--param'])
         )
+
+    if argopts['list']:
+        ListSensors()
+
+    if argopts['senderconfig']:
+        setExporterOptions()
 
