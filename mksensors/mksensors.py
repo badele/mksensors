@@ -6,7 +6,7 @@ Usage:
   mksensors init
   mksensors new SENSORNAME SENSORLIBRARYNAME [--param=<param>]...
   mksensors list
-  mksensors del SENSORNAME
+  mksensors remove SENSORNAME
   mksensors senderconfig EXPORTERNAME [--param=<param>]...
   mksensors -h | --help
 
@@ -17,6 +17,10 @@ Arguments:
 
 Options:
   -h --help     Show this screen.
+
+Examples!
+   sudo mksensors init
+   sudo mksensors new testping sensors.network --param=destination=8.8.8.8 --param=timeout=500
 """
 
 __authors__ = 'Bruno Adelé <bruno@adele.im>'
@@ -28,12 +32,12 @@ __version__ = '0.0.1'
 import os
 import re
 import sys
-
-import lib
 import glob
 
 from docopt import docopt
 from distutils.spawn import find_executable
+
+from lib import mks
 
 
 def convertParamToDict(params):
@@ -49,8 +53,6 @@ def rootRequire():
         sys.exit('This command must be run as root')
 
 
-
-
 def setExporterOptions():
     pass
 
@@ -61,26 +63,50 @@ def newSensor(sensorname, sensorlibraryname, **kwargs):
     if 'python' not in kwargs:
         kwargs['python'] = sys.executable
 
-    lib.createSupervisorConf(
+    # Create Supervisor configuration
+    mks.createSupervisorConf(
         sensorname=sensorname,
         sensorlibraryname=sensorlibraryname,
         **kwargs
     )
 
+    # Copy module sensor into USERSCRIPTS folder
+    mks.copySensorLibraryToUser(sensorname, sensorlibraryname, **kwargs)
+
+def removeSensor(sensorname):
+
+    # Set default variable if is not set
+    if 'python' not in kwargs:
+        kwargs['python'] = sys.executable
+
+    # Create Supervisor configuration
+    mks.createSupervisorConf(
+        sensorname=sensorname,
+        sensorlibraryname=sensorlibraryname,
+        **kwargs
+    )
+
+    # Copy module sensor into USERSCRIPTS folder
+    mks.copySensorLibraryToUser(sensorname, sensorlibraryname, **kwargs)
+
 
 def ListSensors():
-    supervisorfiles = glob.glob(os.path.join(lib.SUPERVISOCONF, "mks_*"))
+    supervisorfiles = glob.glob(os.path.join(mks.SUPERVISOCONF, "mks_*"))
 
     for filename in supervisorfiles:
         content = open(filename).read()
         m = re.match(r".* (.*/__init__\.py)", content, re.DOTALL)
         if m:
             sensorfilename = m.group(1)
-            sensormod = lib.loadModule(sensorfilename)
+            sensormod = mks.loadModule(sensorfilename)
 
 
 def initMkSensors():
     errormsg = ""
+
+    ################################
+    # Supervisor checker
+    ################################
 
     # Check Supervisorctl executable
     executable = find_executable('supervisorctl')
@@ -88,12 +114,16 @@ def initMkSensors():
         errormsg += "* Cannot find the supervisorctl executable\n"
 
     # Check /etc/supervisord.d folder
-    folderexists = os.path.isdir(lib.SUPERVISOCONF)
+    folderexists = os.path.isdir(mks.SUPERVISOCONF)
     if not folderexists:
-        errormsg += "* Cannot find the %s folder\n" % lib.SUPERVISOCONF
+        errormsg += "* Cannot find the %s folder\n" % mks.SUPERVISOCONF
 
     # Create supervisor launcher
     dirname = os.path.dirname(sys.executable)
+
+    ################################
+    # Systemd startup script
+    ################################
 
     executable = find_executable('systemctl')
     if executable:
@@ -113,18 +143,37 @@ RestartSec=50s
 [Install]
 WantedBy=multi-user.target""" % locals()
 
-        lib.saveto('/etc/systemd/system/supervisord.service', systemdconf)
+        mks.saveto('/etc/systemd/system/supervisord.service', systemdconf)
 
-    # Check and create /etc/mksensors folder
-    folderexists = os.path.isdir('/etc/mksensors')
-    if not folderexists:
-        os.makedirs('/etc/mksensors')
+    ################################
+    # Mksensors user & folders
+    ################################
 
-    # Check and create .mksensors user folder
-    folderexists = os.path.isdir(os.path.expanduser('~/.mksensors'))
+    # uid = -1
+    # try:
+    #     uid = pwd.getpwnam('mksensors').pw_uid
+    # except KeyError:
+    #     executable = find_executable('systemctl')
+    #     if executable:
+    #         randomvalue = "%032x" % random.getrandbits(128)
+    #         md5 = hashlib.md5(randomvalue).hexdigest()
+    #         userdir = mks.USERDIR
+    #         os.system("useradd -p '%(md5)s' -d '%(userdir)s' mksensors" % locals())
+
+    # Check and create mksensors user scripts folder
+    folderexists = os.path.isdir(mks.USERDIR)
     if not folderexists:
-        print "create dir"
-        os.makedirs(os.path.expanduser('~/.mksensors'))
+        os.makedirs(mks.USERDIR)
+
+    # if folderexists:
+    #     fd = os.open(mks.USERDIR, os.O_RDONLY)
+    #     os.fchown(fd, uid, 0)
+    #     os.fchmod(fd, stat.S_ISUID | stat.S_IRUSR | stat.S_IWUSR | stat.S_IEXEC)
+
+    # # Check and create /etc/mksensors folder
+    # folderexists = os.path.isdir(mks.CONFDIR)
+    # if not folderexists:
+    #     os.makedirs(mks.CONFDIR)
 
     if errormsg != "":
         print errormsg
@@ -146,6 +195,9 @@ if __name__ == '__main__':
             sensorlibraryname=argopts['SENSORLIBRARYNAME'],
             **convertParamToDict(argopts['--param'])
         )
+
+    if argopts['remove']:
+        removeSensor(sensorname=argopts['SENSORNAME'])
 
     if argopts['list']:
         ListSensors()
