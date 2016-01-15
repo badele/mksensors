@@ -75,19 +75,9 @@ def newSensor(sensorname, sensorlibraryname, **kwargs):
 
 def removeSensor(sensorname):
 
-    # Set default variable if is not set
-    if 'python' not in kwargs:
-        kwargs['python'] = sys.executable
-
-    # Create Supervisor configuration
-    mks.createSupervisorConf(
-        sensorname=sensorname,
-        sensorlibraryname=sensorlibraryname,
-        **kwargs
-    )
-
-    # Copy module sensor into USERSCRIPTS folder
-    mks.copySensorLibraryToUser(sensorname, sensorlibraryname, **kwargs)
+    # Remove sensor
+    mks.removeSupervisorConf(sensorname=sensorname)
+    mks.removeSensorUser(sensorname)
 
 
 def ListSensors():
@@ -159,21 +149,21 @@ WantedBy=multi-user.target""" % locals()
     #         md5 = hashlib.md5(randomvalue).hexdigest()
     #         userdir = mks.USERDIR
     #         os.system("useradd -p '%(md5)s' -d '%(userdir)s' mksensors" % locals())
-
-    # Check and create mksensors user scripts folder
-    folderexists = os.path.isdir(mks.USERDIR)
-    if not folderexists:
-        os.makedirs(mks.USERDIR)
-
+    #
+    # # Check and create mksensors user scripts folder
+    # folderexists = os.path.isdir(mks.USERDIR)
+    # if not folderexists:
+    #     os.makedirs(mks.USERDIR)
+    #
     # if folderexists:
     #     fd = os.open(mks.USERDIR, os.O_RDONLY)
     #     os.fchown(fd, uid, 0)
     #     os.fchmod(fd, stat.S_ISUID | stat.S_IRUSR | stat.S_IWUSR | stat.S_IEXEC)
 
-    # # Check and create /etc/mksensors folder
-    # folderexists = os.path.isdir(mks.CONFDIR)
-    # if not folderexists:
-    #     os.makedirs(mks.CONFDIR)
+    # Check and create mks.CONFDIR folder
+    folderexists = os.path.isdir(mks.CONFDIR)
+    if not folderexists:
+        os.makedirs(mks.CONFDIR)
 
     if errormsg != "":
         print errormsg

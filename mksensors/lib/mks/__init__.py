@@ -8,10 +8,10 @@ __license__ = 'GPL'
 __version__ = '0.0.1'
 
 import os
-from shutil import copytree
+from shutil import copytree, rmtree
 
 SUPERVISOCONF = '/etc/supervisord.d'
-LIBDIR = os.path.abspath(os.path.join(__file__, '../..'))
+LIBDIR = os.path.abspath(os.path.join(__file__, '../../..'))
 USERDIR = '/usr/local/mksensors/bin'
 CONFDIR = '/usr/local/mksensors/bin'
 
@@ -60,8 +60,22 @@ redirect_stderr=true
 startsecs=5""" % kwargs
 
     # Write configuration
-    filename = "/etc/supervisord.d/mks_%(sensorname)s.conf" % locals()
+    supervisordir = SUPERVISOCONF
+    filename = "%(supervisordir)s/mks_%(sensorname)s.conf" % locals()
     saveto(filename, sconf)
+
+def removeSupervisorConf(sensorname):
+    supervisordir = SUPERVISOCONF
+    filename = "%(supervisordir)s/mks_%(sensorname)s.conf" % locals()
+    if os.path.exists(filename):
+        os.remove(filename)
+
+
+def removeSensorUser(sensorname):
+    sensoruserpath = getSensorUserPath(sensorname)
+    checkfilename = '%(sensoruserpath)s/__init__.py' % locals()
+    if os.path.exists(checkfilename):
+        rmtree(sensoruserpath)
 
 def copySensorLibraryToUser(sensorname, sensorlibraryname, **kwargs):
 
