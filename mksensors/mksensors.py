@@ -4,10 +4,10 @@
 """
 Usage:
   mksensors init
-  mksensors new SENSORNAME SENSORLIBRARYNAME [--param=<param>]...
+  mksensors new [--force] SENSORNAME SENSORLIBRARYNAME [--param=<param>]
   mksensors list
   mksensors remove SENSORNAME
-  mksensors senderconfig EXPORTERNAME [--param=<param>]...
+  mksensors senderconfig EXPORTERNAME [--param=<param>]
   mksensors -h | --help
 
 Arguments:
@@ -33,49 +33,59 @@ import os
 import re
 import sys
 import glob
+from distutils.spawn import find_executable
 
 from docopt import docopt
-from distutils.spawn import find_executable
+
 
 from lib import mks
 
 
-def convertParamToDict(params):
-    result = {}
-    for param in params:
-        (key, value) = param.split('=')
-        result[key] = value
-
-    return result
-
 def rootRequire():
+    """Check if run root session"""
     if not os.geteuid() == 0:
         sys.exit('This command must be run as root')
 
 
-def setExporterOptions():
-    pass
-
-
-def newSensor(sensorname, sensorlibraryname, **kwargs):
-
-    # Set default variable if is not set
-    if 'python' not in kwargs:
-        kwargs['python'] = sys.executable
+def newSensor(sensorname, sensorlibraryname, params, **kwargs):
+    """
+    Create new sensor configuration
+     - Create supervisor configuration
+     - Create sensor user script from template
+     - Create YAML configuration file from --param
+     """
 
     # Create Supervisor configuration
     mks.createSupervisorConf(
         sensorname=sensorname,
         sensorlibraryname=sensorlibraryname,
+        params=params,
         **kwargs
     )
 
     # Copy module sensor into USERSCRIPTS folder
-    mks.copySensorLibraryToUser(sensorname, sensorlibraryname, **kwargs)
+    mks.copySensorLibraryToUser(
+        sensorname=sensorname,
+        sensorlibraryname=sensorlibraryname,
+        params=params,
+        **kwargs
+    )
+
+    # Create sensor user configuration
+    mks.createSensorConfig(
+        sensorname=sensorname,
+        params=params,
+        **kwargs
+    )
+
 
 def removeSensor(sensorname):
-
-    # Remove sensor
+    """
+    Remove sensor
+     - Remove supervisor sensor configuration
+     - Remove Sensor user script
+     - Remove Sensor configuration
+    """
     mks.removeSupervisorConf(sensorname=sensorname)
     mks.removeSensorUser(sensorname)
 
@@ -92,6 +102,14 @@ def ListSensors():
 
 
 def initMkSensors():
+    """
+    Init the mksensors configuration, it check
+     - Check if supervisorctl executable is present
+     - Check if /etc/supervisord.d folder exists
+     - Create supervisor systemd launcher
+     - Create /usr/local/mksensors folder
+    """
+
     errormsg = ""
 
     ################################
@@ -108,13 +126,11 @@ def initMkSensors():
     if not folderexists:
         errormsg += "* Cannot find the %s folder\n" % mks.SUPERVISOCONF
 
-    # Create supervisor launcher
-    dirname = os.path.dirname(sys.executable)
-
     ################################
     # Systemd startup script
     ################################
 
+    dirname = os.path.dirname(sys.executable)
     executable = find_executable('systemctl')
     if executable:
         systemdconf = """[Unit]
@@ -180,10 +196,13 @@ if __name__ == '__main__':
         initMkSensors()
 
     if argopts['new']:
+        print argopts
+
         newSensor(
             sensorname=argopts['SENSORNAME'],
             sensorlibraryname=argopts['SENSORLIBRARYNAME'],
-            **convertParamToDict(argopts['--param'])
+            params=mks.convertStrintToDict(argopts['--param']),
+            **argopts
         )
 
     if argopts['remove']:
@@ -193,5 +212,6 @@ if __name__ == '__main__':
         ListSensors()
 
     if argopts['senderconfig']:
-        setExporterOptions()
+        pass
+        #setExporterOptions()
 
