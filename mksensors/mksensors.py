@@ -12,15 +12,15 @@ Usage:
 
 Arguments:
   <sensorname> 	    Sensor name
-  SENSORLIBRARYNAME Sensor libraryname (ex: sensors.network )
+  SENSORLIBRARYNAME Sensor libraryname (ex: sensor.network )
   EXPORTERNAME 	Exporter name
 
 Options:
   -h --help     Show this screen.
 
-Examples!
+Examples:
    sudo mksensors init
-   sudo mksensors new testping sensors.network --param=destination=8.8.8.8 --param=timeout=500
+   sudo mksensors new testping sensor.network --param="'hostnames': ['8.8.8.8', '8.8.4.4'], 'filters': ['avg_rtt']"
 """
 
 __authors__ = 'Bruno Adelé <bruno@adele.im>'
