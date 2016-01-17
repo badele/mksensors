@@ -10,6 +10,9 @@ __version__ = '0.0.1'
 import os
 import sys
 import ast
+import time
+import datetime
+
 from shutil import copytree, rmtree
 from copy import deepcopy
 
@@ -186,9 +189,14 @@ def loadSenderObject(sensorname):
 
     return senders
 
-def sendMessages(senders, id, value):
+def sendMessages(senders, id, value, ts=None):
+
+    if ts is None:
+        now = datetime.datetime.now()
+        ts = time.mktime(now.timetuple())
+
     for sender in senders:
-        sender.sendMessage(id, value)
+        sender.sendMessage(id, value, ts)
 
 def loadSensorConfig():
     """Load sensor YAML file"""

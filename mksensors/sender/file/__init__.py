@@ -36,8 +36,8 @@ class Sender(object):
         self._file = open(logfilename, "a")
 
 
-    def sendMessage(self, id, value):
-        content = "%(id)s: %(value)s\n" % locals()
+    def sendMessage(self, id, value, ts=None):
+        content = "%(id)s: %(value)s %(ts)s\n" % locals()
         self._file.write(content)
         self._file.flush()
 
