@@ -22,6 +22,7 @@ from mksensors.lib.mod.network.ping import ping
 if __name__ == '__main__':
     params = mks.loadSensorConfig()
     sensorname = mks.getSensorName()
+    senders = mks.loadSenderObject(sensorname)
 
     # Set default parameters
     hostnames = params.get('hostnames', [])
@@ -33,7 +34,6 @@ if __name__ == '__main__':
         ]
     )
 
-    print params
     while True:
         # Ping for all hostnames
         for hostname in hostnames:
@@ -47,8 +47,8 @@ if __name__ == '__main__':
             # return value
             for varname in filters:
                 result['varname'] = varname
-                value = "%(sensorname)s.%(hostname)s.%(varname)s %(avg_rtt)s" % result
-                print value
-
+                id = "%(sensorname)s.%(hostname)s.%(varname)s" % result
+                value = "%(avg_rtt)s" % result
+                mks.sendMessages(senders, id, value)
         # Sleep
         time.sleep(params['pause'])

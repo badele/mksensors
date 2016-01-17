@@ -4,23 +4,24 @@
 """
 Usage:
   mksensors init
-  mksensors new [--force] SENSORNAME SENSORLIBRARYNAME [--param=<param>]
-  mksensors list
-  mksensors remove SENSORNAME
-  mksensors senderconfig EXPORTERNAME [--param=<param>]
+  mksensors sensor new [--force] SENSORNAME SENSORLIBRARYNAME [--param=<param>]
+  mksensors sensor list
+  mksensors sensor remove SENSORNAME
+  mksensors sender new SENDERTYPE [--param=<param>]
   mksensors -h | --help
 
 Arguments:
   <sensorname> 	    Sensor name
   SENSORLIBRARYNAME Sensor libraryname (ex: sensor.network )
-  EXPORTERNAME 	Exporter name
+  SENDERTYPE 	    Sender type (ex: sender.file, sender.mqtt)
 
 Options:
   -h --help     Show this screen.
 
 Examples:
-   sudo mksensors init
-   sudo mksensors new testping sensor.network --param="'hostnames': ['8.8.8.8', '8.8.4.4'], 'filters': ['avg_rtt']"
+    sudo mksensors init
+    sudo mksensors sender new sender.file --param="'location': '/usr/local/mksensors/log'"
+    sudo mksensors new testping sensor.network --param="'hostnames': ['8.8.8.8', '8.8.4.4'], 'filters': ['avg_rtt']"
 """
 
 __authors__ = 'Bruno Adelé <bruno@adele.im>'
@@ -96,9 +97,18 @@ def ListSensors():
     for filename in supervisorfiles:
         content = open(filename).read()
         m = re.match(r".* (.*/__init__\.py)", content, re.DOTALL)
-        if m:
-            sensorfilename = m.group(1)
-            sensormod = mks.loadModule(sensorfilename)
+        # if m:
+        #     sensorfilename = m.group(1)
+        #     sensormod = mks.loadModule(sensorfilename)
+
+
+def newSender(sendertype, params, **kwargs):
+    # Create sensor user configuration
+    mks.createSenderConfig(
+        sendertype=sendertype,
+        params=params,
+        **kwargs
+    )
 
 
 def initMkSensors():
@@ -176,17 +186,17 @@ WantedBy=multi-user.target""" % locals()
     #     os.fchown(fd, uid, 0)
     #     os.fchmod(fd, stat.S_ISUID | stat.S_IRUSR | stat.S_IWUSR | stat.S_IEXEC)
 
-    # Check and create mks.CONFDIR folder
-    folderexists = os.path.isdir(mks.CONFDIR)
-    if not folderexists:
-        os.makedirs(mks.CONFDIR)
+    # Check and create mksensors folders
+    checkdirs = [mks.CONFDIR, mks.BINDIR, mks.LOGDIR]
+    for checkdir in checkdirs:
+        folderexists = os.path.isdir(checkdir)
+        if not folderexists:
+            os.makedirs(checkdir)
 
     if errormsg != "":
         print errormsg
 
-
-if __name__ == '__main__':
-
+def main():
     argopts = docopt(__doc__)
 
     # Force use root account
@@ -195,8 +205,10 @@ if __name__ == '__main__':
     if argopts['init']:
         initMkSensors()
 
-    if argopts['new']:
-        print argopts
+    ###############################
+    # Sensor
+    ###############################
+    if argopts['sensor'] and argopts['new']:
 
         newSensor(
             sensorname=argopts['SENSORNAME'],
@@ -205,13 +217,22 @@ if __name__ == '__main__':
             **argopts
         )
 
-    if argopts['remove']:
+    if argopts['sensor'] and argopts['remove']:
         removeSensor(sensorname=argopts['SENSORNAME'])
 
-    if argopts['list']:
+    if argopts['sensor'] and argopts['list']:
         ListSensors()
 
-    if argopts['senderconfig']:
-        pass
-        #setExporterOptions()
+    ###############################
+    # Sensor
+    ###############################
+    if argopts['sender'] and argopts['new']:
+        newSender(
+            sendertype=argopts['SENDERTYPE'],
+            params=mks.convertStrintToDict(argopts['--param']),
+            **argopts
+        )
 
+
+if __name__ == '__main__':
+    main()

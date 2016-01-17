@@ -18,9 +18,9 @@ import yaml
 # Default Constant
 SUPERVISOCONF = '/etc/supervisord.d'
 LIBDIR = os.path.abspath(os.path.join(__file__, '../../..'))
-USERDIR = '/usr/local/mksensors/bin'
-CONFDIR = '/usr/local/mksensors/bin'
-
+CONFDIR = '/usr/local/mksensors/conf'
+BINDIR = '/usr/local/mksensors/bin'
+LOGDIR = '/usr/local/mksensors/log'
 
 def loadModule(modulename):
     # Try to load the sensor module
@@ -34,6 +34,9 @@ def loadModule(modulename):
 
 def convertStrintToDict(content):
     """Convert string to Dictionary"""
+    if content is None:
+        return {}
+
     return ast.literal_eval("{%s}" % content)
 
 
@@ -47,13 +50,22 @@ def getSensorLibraryPath(sensorlibraryname):
     return sensorlibrarypath
 
 
-def getSensorUserPath(sensorname):
+def getSensorBinPath(sensorname):
     """Get user sensor path"""
 
-    userdir = USERDIR
-    sensorlibrarypath = "%(userdir)s/%(sensorname)s" % locals()
+    bindir = BINDIR
+    sensorbinpath = "%(bindir)s/%(sensorname)s" % locals()
 
-    return sensorlibrarypath
+    return sensorbinpath
+
+
+def getSensorLogPath(sensorname):
+    """Get user sensor path"""
+
+    logdir = LOGDIR
+    sensorlogpath = "%(logdir)s/%(sensorname)s" % locals()
+
+    return sensorlogpath
 
 
 def createSupervisorConf(sensorname, sensorlibraryname, params, **kwargs):
@@ -63,7 +75,7 @@ def createSupervisorConf(sensorname, sensorlibraryname, params, **kwargs):
     localparams = deepcopy(params)
     localparams['python'] = sys.executable
     localparams['sensorname'] = sensorname
-    localparams['sensorcmd'] = getSensorUserPath(sensorname) + '/__init__.py'
+    localparams['sensorcmd'] = getSensorBinPath(sensorname) + '/__init__.py'
 
 
     # Prepare supervisor.conf
@@ -93,7 +105,7 @@ def removeSupervisorConf(sensorname):
 def removeSensorUser(sensorname):
     """Remove the sensor user script"""
 
-    sensoruserpath = getSensorUserPath(sensorname)
+    sensoruserpath = getSensorBinPath(sensorname)
     checkfilename = '%(sensoruserpath)s/__init__.py' % locals()
     if os.path.exists(checkfilename):
         print "Delete %s" % sensoruserpath
@@ -104,12 +116,13 @@ def copySensorLibraryToUser(sensorname, sensorlibraryname, params,  **kwargs):
     """Copy sensor template to user script folder"""
 
     sensorlibrarypath = getSensorLibraryPath(sensorlibraryname)
-    sensoruserpath = getSensorUserPath(sensorname)
+    sensoruserpath = getSensorBinPath(sensorname)
 
     if os.path.isdir(sensoruserpath) and kwargs['--force'] is False:
         print '%(sensorname)s allready exist in %(sensoruserpath)s' % locals()
     else:
-        rmtree(sensoruserpath)
+        if os.path.isdir(sensoruserpath):
+            rmtree(sensoruserpath)
         copytree(sensorlibrarypath, sensoruserpath)
 
 
@@ -117,12 +130,12 @@ def createSensorConfig(sensorname, params, **kwargs):
     """Create sensor YAML configuration file"""
 
     # Sensor configuration filename
-    sensoruserpath = getSensorUserPath(sensorname)
+    sensoruserpath = getSensorBinPath(sensorname)
     conffilename = '%(sensoruserpath)s/conf.yml' % locals()
 
     # Merge configuration
     conf = {}
-    if os.path.isdir(conffilename):
+    if os.path.isfile(conffilename):
         with open(conffilename, 'r') as stream:
             conf = yaml.load(stream)
 
@@ -130,8 +143,52 @@ def createSensorConfig(sensorname, params, **kwargs):
         conf[key] = params[key]
 
     # Save to YAML format
-    saveto(conffilename, yaml.dump(conf))
+    saveto(conffilename, yaml.dump(conf, default_flow_style=False))
 
+
+def createSenderConfig(sendertype, params, **kwargs):
+    """Create sensor YAML configuration file"""
+
+    # Sender configuration filename
+    etc = CONFDIR
+    conffilename = '%(etc)s/sender.yml' % locals()
+
+    # Merge configuration
+    conf = {}
+    if os.path.isfile(conffilename):
+        with open(conffilename, 'r') as stream:
+            conf = yaml.load(stream)
+
+    conf[sendertype] = {}
+    for key in params.keys():
+        conf[sendertype][key] = params[key]
+
+    # Save to YAML format
+    saveto(conffilename, yaml.dump(conf, default_flow_style=False))
+
+
+def loadSenderObject(sensorname):
+    conf = CONFDIR
+    conffilename = '%(conf)s/sender.yml' % locals()
+
+    conf = {}
+    if os.path.isfile(conffilename):
+        with open(conffilename, 'r') as stream:
+            conf = yaml.load(stream)
+
+    senders = []
+    for key in conf:
+        modulename = 'mksensors.%s' % key
+        mod = loadModule(modulename)
+        obj = mod.Sender(sensorname, conf)
+        obj.initSender()
+        senders.append(obj)
+
+    return senders
+
+def sendMessages(senders, id, value):
+    for sender in senders:
+        sender.sendMessage(id, value)
 
 def loadSensorConfig():
     """Load sensor YAML file"""
