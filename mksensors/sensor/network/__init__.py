@@ -17,7 +17,11 @@ from copy import deepcopy
 
 
 from mksensors.lib import mks
-from mksensors.lib.mod.network.ping import ping
+from mksensors.lib.mod.network import ping
+
+def checkRequirements():
+    ping.checkRequirements()
+
 
 if __name__ == '__main__':
     params = mks.loadSensorConfig()
@@ -38,7 +42,7 @@ if __name__ == '__main__':
         # Ping for all hostnames
         for hostname in hostnames:
             # Test connexion
-            rping = ping(destination=hostname, **params)
+            rping = ping.ping(destination=hostname, **params)
             rping.run()
             result = deepcopy(rping.results)
             result['sensorname'] = sensorname

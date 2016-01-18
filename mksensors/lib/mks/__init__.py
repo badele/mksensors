@@ -11,10 +11,17 @@ import os
 import sys
 import ast
 import time
+import pip
 import datetime
-
+import pkg_resources
 from shutil import copytree, rmtree
 from copy import deepcopy
+
+try:
+    from urllib.parse import urlparse
+except:
+    from urlparse import urlparse
+
 
 import yaml
 
@@ -25,7 +32,32 @@ CONFDIR = '/usr/local/mksensors/conf'
 BINDIR = '/usr/local/mksensors/bin'
 LOGDIR = '/usr/local/mksensors/log'
 
+
+def checkPackageInstalled(package):
+    """Check python package is installed"""
+
+    try:
+        req = pkg_resources.Requirement.parse(package)
+    except ValueError:
+        # check zip file
+        req = pkg_resources.Requirement.parse(urlparse(package).fragment)
+
+    return any(dist in req for dist in pkg_resources.working_set)
+
+
+def checkOrInstallPackages(packages):
+    """Check and install package if is not installed"""
+
+    if isinstance(packages, str):
+        packages = [packages]
+
+    for package in packages:
+        if not checkPackageInstalled(package):
+            pip.main(['install', package])
+
 def loadModule(modulename):
+    """Load Dynamicaly python module"""
+
     # Try to load the sensor module
     try:
         mod = __import__(modulename, fromlist=[modulename])

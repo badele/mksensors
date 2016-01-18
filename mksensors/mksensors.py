@@ -56,6 +56,11 @@ def newSensor(sensorname, sensorlibraryname, params, **kwargs):
      - Create YAML configuration file from --param
      """
 
+    # Check packages installation
+    modulename = 'mksensors.%s' % sensorlibraryname
+    mod = mks.loadModule(modulename)
+    mod.checkRequirements()
+
     # Create Supervisor configuration
     mks.createSupervisorConf(
         sensorname=sensorname,

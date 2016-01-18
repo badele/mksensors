@@ -7,12 +7,20 @@ __description__ = """Tool for easily create sensors daemons"""
 __license__ = 'GPL'
 __version__ = '0.0.1'
 
-import pyping
 
+from mksensors.lib import mks
+
+def checkRequirements():
+    packages = ['pyping==0.0.4']
+    mks.checkOrInstallPackages(packages)
 
 class ping(object):
+
     """Check if host reply a ICMP request"""
     def __init__(self, **kwargs):
+        # Import module
+        import pyping
+
         self.params = kwargs
         self.results = {}
 

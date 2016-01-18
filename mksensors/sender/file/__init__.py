@@ -12,6 +12,9 @@ import os
 from mksensors.lib import mks
 
 
+def checkRequirements():
+   pass
+
 class Sender(object):
     """Check if host reply a ICMP request"""
 
