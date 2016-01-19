@@ -41,14 +41,10 @@ class Sender(object):
             self._files[datasource] = open(logfilename, "a")
 
 
-    # def sendValue(self, id, value, ts=None):
-    #     content = "%(id)s: %(value)s %(ts)s\n" % locals()
-    #     self._file.write(content)
-    #
     def sendValues(self, sensorname, items):
 
         for item in items:
             (datasource, value, ts) = item
-            content = "%(value)s %(ts)s\n" % locals()
+            content = "%(ts)s %(value)s\n" % locals()
             self._files[datasource].write(content)
         self._files[datasource].flush()

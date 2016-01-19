@@ -43,6 +43,6 @@ class Sender(object):
     def sendValues(self, sensorname, items):
         for item in items:
             (datasource, value, ts) = item
-            content = "%(sensorname)s.%(datasource)s %(value)s %(ts)s\n" % locals()
+            content = "%(ts)s %(sensorname)s.%(datasource)s %(value)s\n" % locals()
             self._file.write(content)
         self._file.flush()
