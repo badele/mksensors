@@ -32,8 +32,7 @@ if __name__ == '__main__':
     filters = params.get(
         'datasources', [
             'max_rtt', 'min_rtt', 'avg_rtt', 'packet_lost',
-            'packet_size', 'timeout', 'destination',
-            'destination_ip', 'result',
+            'packet_size', 'timeout', 'result',
         ]
     )
 
@@ -41,7 +40,7 @@ if __name__ == '__main__':
     datasources = []
     for hostname in hostnames:
         for filter in filters:
-            dsname = "%(hostname)s_%(filter)s" % locals()
+            dsname = "%(hostname)s.%(filter)s" % locals()
             datasources.append(dsname)
 
     senders = mks.loadSenderObject(sensorname, datasources)
@@ -59,7 +58,7 @@ if __name__ == '__main__':
             # return value
             values = []
             for filter in filters:
-                datasource = "%(hostname)s_%(filter)s" % locals()
+                datasource = "%(hostname)s.%(filter)s" % locals()
                 value = result[filter]
                 values.append((datasource, value, mks.getTimestamp()))
 
