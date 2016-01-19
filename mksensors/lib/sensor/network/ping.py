@@ -14,12 +14,13 @@ def checkRequirements():
     packages = ['pyping==0.0.4']
     mks.checkOrInstallPackages(packages)
 
+
 class ping(object):
 
     """Check if host reply a ICMP request"""
     def __init__(self, **kwargs):
         # Import module
-        import pyping
+        self.mypyping = __import__('pyping')
 
         self.params = kwargs
         self.results = {}
@@ -31,7 +32,7 @@ class ping(object):
             self.params['count'] = 2
 
         try:
-            r = pyping.ping(
+            r = self.mypyping.ping(
                 hostname=self.params['destination'],
                 timeout=self.params['timeout'],
                 count=self.params['count'],

@@ -57,7 +57,7 @@ def newSensor(sensorname, sensorlibraryname, params, **kwargs):
      """
 
     # Check packages installation
-    modulename = 'mksensors.%s' % sensorlibraryname
+    modulename = 'mksensors.templates.%s' % sensorlibraryname
     mod = mks.loadModule(modulename)
     mod.checkRequirements()
 
@@ -108,6 +108,11 @@ def ListSensors():
 
 
 def newSender(sendertype, params, **kwargs):
+    # Check packages installation
+    modulename = 'mksensors.lib.%s' % sendertype
+    mod = mks.loadModule(modulename)
+    mod.checkRequirements()
+
     # Create sensor user configuration
     mks.createSenderConfig(
         sendertype=sendertype,

@@ -15,9 +15,9 @@ __version__ = '0.0.1'
 import time
 from copy import deepcopy
 
-
 from mksensors.lib import mks
-from mksensors.lib.mod.network import ping
+from mksensors.lib.sensor.network import ping
+
 
 def checkRequirements():
     ping.checkRequirements()
@@ -26,17 +26,25 @@ def checkRequirements():
 if __name__ == '__main__':
     params = mks.loadSensorConfig()
     sensorname = mks.getSensorName()
-    senders = mks.loadSenderObject(sensorname)
 
     # Set default parameters
     hostnames = params.get('hostnames', [])
     filters = params.get(
-        'filters', [
+        'datasources', [
             'max_rtt', 'min_rtt', 'avg_rtt', 'packet_lost',
-            'output', 'packet_size', 'timeout', 'destination',
+            'packet_size', 'timeout', 'destination',
             'destination_ip', 'result',
         ]
     )
+
+    # Set datasource list
+    datasources = []
+    for hostname in hostnames:
+        for filter in filters:
+            dsname = "%(hostname)s_%(filter)s" % locals()
+            datasources.append(dsname)
+
+    senders = mks.loadSenderObject(sensorname, datasources)
 
     while True:
         # Ping for all hostnames
@@ -49,10 +57,12 @@ if __name__ == '__main__':
             result['hostname'] = hostname.replace('.', '_')
 
             # return value
-            for varname in filters:
-                result['varname'] = varname
-                id = "%(sensorname)s.%(hostname)s.%(varname)s" % result
-                value = "%(avg_rtt)s" % result
-                mks.sendMessages(senders, id, value)
+            values = []
+            for filter in filters:
+                datasource = "%(hostname)s_%(filter)s" % locals()
+                value = result[filter]
+                values.append((datasource, value, mks.getTimestamp()))
+
+            mks.sendValues(senders, sensorname, values)
         # Sleep
         time.sleep(params['pause'])

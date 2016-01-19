@@ -27,11 +27,16 @@ import yaml
 
 # Default Constant
 SUPERVISOCONF = '/etc/supervisord.d'
-LIBDIR = os.path.abspath(os.path.join(__file__, '../../..'))
+LIBDIR = os.path.abspath(os.path.join(__file__, '../../../templates'))
 CONFDIR = '/usr/local/mksensors/conf'
 BINDIR = '/usr/local/mksensors/bin'
 LOGDIR = '/usr/local/mksensors/log'
 
+def getTimestamp():
+    now = datetime.datetime.now()
+    ts = time.mktime(now.timetuple())
+
+    return ts
 
 def checkPackageInstalled(package):
     """Check python package is installed"""
@@ -202,7 +207,7 @@ def createSenderConfig(sendertype, params, **kwargs):
     saveto(conffilename, yaml.dump(conf, default_flow_style=False))
 
 
-def loadSenderObject(sensorname):
+def loadSenderObject(sensorname, datasources):
     conf = CONFDIR
     conffilename = '%(conf)s/sender.yml' % locals()
 
@@ -213,28 +218,24 @@ def loadSenderObject(sensorname):
 
     senders = []
     for key in conf:
-        modulename = 'mksensors.%s' % key
+        modulename = 'mksensors.lib.%s' % key
         mod = loadModule(modulename)
-        obj = mod.Sender(sensorname, conf)
+        obj = mod.Sender(sensorname, datasources, conf)
         obj.initSender()
         senders.append(obj)
 
     return senders
 
-def sendMessages(senders, id, value, ts=None):
-
-    if ts is None:
-        now = datetime.datetime.now()
-        ts = time.mktime(now.timetuple())
+def sendValues(senders, sensorname, values):
 
     for sender in senders:
-        sender.sendMessage(id, value, ts)
+        sender.sendValues(sensorname, values)
 
 def loadSensorConfig():
     """Load sensor YAML file"""
 
-    mainpython = sys.argv[0]
-    sensorfolder = os.path.dirname(mainpython)
+    thisscript = os.path.abspath(sys.argv[0])
+    sensorfolder = os.path.dirname(thisscript)
     conffilename = "%(sensorfolder)s/conf.yml" % locals()
 
     conf = {}
