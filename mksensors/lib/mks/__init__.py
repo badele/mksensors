@@ -26,11 +26,13 @@ except:
 import yaml
 
 # Default Constant
-SUPERVISOCONF = '/etc/supervisord.d'
 LIBDIR = os.path.abspath(os.path.join(__file__, '../../../templates'))
-CONFDIR = '/usr/local/mksensors/conf'
-BINDIR = '/usr/local/mksensors/bin'
-LOGDIR = '/usr/local/mksensors/log'
+MKSROOT = '/usr/local/mksensors'
+CONFDIR = '%(MKSROOT)s/conf' % locals()
+BINDIR = '%(MKSROOT)s/bin' % locals()
+LOGDIR = '%(MKSROOT)s/log' % locals()
+SUPERVISORDIR = '%(CONFDIR)s/supervisord.d' % locals()
+MKPROCESS = '/usr/local/bin/mksensors_process'
 
 def getTimestamp():
     now = datetime.datetime.now()
@@ -127,7 +129,7 @@ redirect_stderr=true
 startsecs=5""" % localparams
 
     # Write configuration
-    supervisordir = SUPERVISOCONF
+    supervisordir = SUPERVISORDIR
     filename = "%(supervisordir)s/mks_%(sensorname)s.conf" % locals()
     saveto(filename, sconf)
 
@@ -135,7 +137,7 @@ startsecs=5""" % localparams
 def removeSupervisorConf(sensorname):
     """Remove the supervisor Configuration"""
 
-    supervisordir = SUPERVISOCONF
+    supervisordir = SUPERVISORDIR
     filename = "%(supervisordir)s/mks_%(sensorname)s.conf" % locals()
     if os.path.exists(filename):
         print "Delete %s" % filename
@@ -230,6 +232,7 @@ def sendValues(senders, sensorname, values):
 
     for sender in senders:
         sender.sendValues(sensorname, values)
+
 
 def loadSensorConfig():
     """Load sensor YAML file"""

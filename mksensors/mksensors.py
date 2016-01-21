@@ -4,7 +4,7 @@
 """
 Usage:
   mksensors init
-  mksensors sensor new [--force] SENSORNAME SENSORLIBRARYNAME [--param=<param>]
+  mksensors sensor new SENSORNAME SENSORLIBRARYNAME [--force]  [--param=<param>]
   mksensors sensor list
   mksensors sensor remove SENSORNAME
   mksensors sender new SENDERTYPE [--param=<param>]
@@ -34,6 +34,7 @@ import os
 import re
 import sys
 import glob
+import stat
 from distutils.spawn import find_executable
 
 from docopt import docopt
@@ -97,7 +98,7 @@ def removeSensor(sensorname):
 
 
 def ListSensors():
-    supervisorfiles = glob.glob(os.path.join(mks.SUPERVISOCONF, "mks_*"))
+    supervisorfiles = glob.glob(os.path.join(mks.SUPERVISORDIR, "mks_*"))
 
     for filename in supervisorfiles:
         content = open(filename).read()
@@ -137,14 +138,38 @@ def initMkSensors():
     ################################
 
     # Check Supervisorctl executable
-    executable = find_executable('supervisorctl')
-    if executable is None:
+    supervisorctl = find_executable('supervisorctl')
+    if supervisorctl is None:
         errormsg += "* Cannot find the supervisorctl executable\n"
 
     # Check /etc/supervisord.d folder
-    folderexists = os.path.isdir(mks.SUPERVISOCONF)
+    supervisordir = mks.SUPERVISORDIR
+    folderexists = os.path.isdir(supervisordir)
     if not folderexists:
-        errormsg += "* Cannot find the %s folder\n" % mks.SUPERVISOCONF
+        os.mkdir(supervisordir)
+
+    # Check supervisord.conf file
+    supervisordconf = '%s/supervisord.conf' % mks.CONFDIR
+    fileexists = os.path.isfile(supervisordconf)
+    if not fileexists:
+        content = """[unix_http_server]
+file=/tmp/supervisor_mksensors.sock
+[supervisord]
+logfile=/tmp/supervisord_mksensors.log
+logfile_maxbytes=50MB
+logfile_backups=10
+loglevel=info
+pidfile=/tmp/supervisord_mksensors.pid
+nodaemon=false
+minfds=1024
+minprocs=200
+[rpcinterface:supervisor]
+supervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface
+[supervisorctl]
+serverurl=unix:///tmp/supervisor_mksensors.sock
+[include]
+files = %(supervisordir)s/*.conf""" % locals()
+        mks.saveto(supervisordconf, content)
 
     ################################
     # Systemd startup script
@@ -153,13 +178,13 @@ def initMkSensors():
     dirname = os.path.dirname(sys.executable)
     executable = find_executable('systemctl')
     if executable:
-        systemdconf = """[Unit]
+        content = """[Unit]
 Description=Supervisor process control system for UNIX
 Documentation=http://supervisord.org
 After=network.target
 
 [Service]
-ExecStart=%(dirname)s/supervisord -n -c /etc/supervisord.conf
+ExecStart=%(dirname)s/supervisord -n -c %(supervisordconf)s
 ExecStop=%(dirname)s/supervisorctl shutdown
 ExecReload=%(dirname)s/supervisorctl reload
 KillMode=process
@@ -169,7 +194,15 @@ RestartSec=50s
 [Install]
 WantedBy=multi-user.target""" % locals()
 
-        mks.saveto('/etc/systemd/system/supervisord.service', systemdconf)
+        mks.saveto('/etc/systemd/system/supervisord.service', content)
+
+    # Create supervisorctl alias
+    content = """#!/bin/bash
+%(supervisorctl)s -c %(supervisordconf)s""" % locals()
+
+    mks.saveto(mks.MKPROCESS, content)
+    fd = os.open(mks.MKPROCESS, os.O_RDONLY)
+    os.fchmod(fd, stat.S_IRUSR | stat.S_IWUSR | stat.S_IEXEC)
 
     ################################
     # Mksensors user & folders
