@@ -138,6 +138,7 @@ def initMkSensors():
     ################################
 
     # Check Supervisorctl executable
+    supervisord = find_executable('supervisord')
     supervisorctl = find_executable('supervisorctl')
     if supervisorctl is None:
         errormsg += "* Cannot find the supervisorctl executable\n"
@@ -176,17 +177,17 @@ files = %(supervisordir)s/*.conf""" % locals()
     ################################
 
     dirname = os.path.dirname(sys.executable)
-    executable = find_executable('systemctl')
-    if executable:
+    systemctl = find_executable('systemctl')
+    if systemctl:
         content = """[Unit]
 Description=Supervisor process control system for UNIX
 Documentation=http://supervisord.org
 After=network.target
 
 [Service]
-ExecStart=%(dirname)s/supervisord -n -c %(supervisordconf)s
-ExecStop=%(dirname)s/supervisorctl shutdown
-ExecReload=%(dirname)s/supervisorctl reload
+ExecStart=%(supervisord)s -n -c %(supervisordconf)s
+ExecStop=%(supervisorctl)s shutdown
+ExecReload=%(supervisorctl)s reload
 KillMode=process
 Restart=on-failure
 RestartSec=50s
