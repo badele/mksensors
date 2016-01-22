@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
---param="'location': '/usr/local/mksensors/rrd'"
+mksensors sender new sender.rrd --param="'location': '/usr/local/mksensors/rrd'"
 """
 
 __authors__ = 'Bruno Adelé <bruno@adele.im>'

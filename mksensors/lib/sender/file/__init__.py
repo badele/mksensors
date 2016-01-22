@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""
+mksensors sender new sender.file --param="'location': '/usr/local/mksensors/file'"
+"""
+
 __authors__ = 'Bruno Adelé <bruno@adele.im>'
 __copyright__ = 'Copyright (C) 2016 Bruno Adelé'
 __description__ = """Tool for easily create sensors daemons"""
