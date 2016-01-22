@@ -195,14 +195,14 @@ RestartSec=50s
 [Install]
 WantedBy=multi-user.target""" % locals()
 
-        mks.saveto('/etc/systemd/system/supervisord.service', content)
+        mks.saveto('/etc/systemd/system/mksensors.service', content)
 
     # Create supervisorctl alias
     content = """#!/bin/bash
-%(supervisorctl)s -c %(supervisordconf)s""" % locals()
+%(supervisorctl)s -c %(supervisordconf)s $*""" % locals()
 
-    mks.saveto(mks.MKPROCESS, content)
-    fd = os.open(mks.MKPROCESS, os.O_RDONLY)
+    mks.saveto(mks.MKSENSORSCTL, content)
+    fd = os.open(mks.MKSENSORSCTL, os.O_RDONLY)
     os.fchmod(fd, stat.S_IRUSR | stat.S_IWUSR | stat.S_IEXEC)
 
     ################################

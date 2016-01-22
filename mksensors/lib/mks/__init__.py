@@ -32,7 +32,7 @@ CONFDIR = '%(MKSROOT)s/conf' % locals()
 BINDIR = '%(MKSROOT)s/bin' % locals()
 LOGDIR = '%(MKSROOT)s/log' % locals()
 SUPERVISORDIR = '%(CONFDIR)s/supervisord.d' % locals()
-MKPROCESS = '/usr/local/bin/mksensors_process'
+MKSENSORSCTL = '/usr/local/bin/mksensorsctl'
 
 def getTimestamp():
     now = datetime.datetime.now()
