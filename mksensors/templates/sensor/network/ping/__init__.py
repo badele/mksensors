@@ -40,8 +40,8 @@ if __name__ == '__main__':
     datasources = []
     for hostname in hostnames:
         for filter in filters:
-            dsname = "%(hostname)s.%(filter)s" % locals()
-            datasources.append(dsname)
+            dsnames = (hostname, filter)
+            datasources.append(dsnames)
 
     senders = mks.loadSenderObject(sensorname, datasources)
 
@@ -58,7 +58,7 @@ if __name__ == '__main__':
             # return value
             values = []
             for filter in filters:
-                datasource = "%(hostname)s.%(filter)s" % locals()
+                datasource = (hostname, filter)
                 value = result[filter]
                 values.append((datasource, value, mks.getTimestamp()))
 

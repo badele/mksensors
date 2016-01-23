@@ -81,6 +81,13 @@ def convertStrintToDict(content):
     return ast.literal_eval("{%s}" % content)
 
 
+def datasource2String(datasources, separator):
+    result = ""
+    for datasource in datasources:
+        result += "%(separator)s%(datasource)s" % locals()
+
+    return result
+
 def getSensorLibraryPath(sensorlibraryname):
     """Get main sensor python project file"""
 

@@ -12,7 +12,7 @@ __license__ = 'GPL'
 __version__ = '0.0.1'
 
 import os
-
+from mksensors.lib import mks
 
 def checkRequirements():
    pass
@@ -37,7 +37,8 @@ class Sender(object):
 
         sensorname = self.sensorname
         for datasource in self.datasources:
-            logfilename = '%(location)s/%(sensorname)s.%(datasource)s.log' % locals()
+            dsname = mks.datasource2String(datasource, '.')
+            logfilename = '%(location)s/%(sensorname)s%(dsname)s.log' % locals()
             self._files[datasource] = open(logfilename, "a")
 
 

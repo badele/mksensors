@@ -114,7 +114,8 @@ class Sender(object):
             # Check if rrd exist
             sensorname = self.sensorname
             location = self.conf['location']
-            filename = '%(location)s/%(sensorname)s.%(datasource)s.rrd' % locals()
+            dsname = mks.datasource2String(datasource, '.')
+            filename = '%(location)s/%(sensorname)s%(dsname)s.rrd' % locals()
             if not os.path.exists(filename):
                 self.createRRD(filename, datasource)
 

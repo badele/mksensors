@@ -30,7 +30,10 @@ if __name__ == '__main__':
     hostnames = params.get('hostnames', [])
 
     # Set datasource list
-    datasources = ['result']
+    datasources = []
+    for hostname in hostnames:
+        dsnames = (hostname, 'isup')
+        datasources.append(dsnames)
 
     senders = mks.loadSenderObject(sensorname, datasources)
 
@@ -46,7 +49,7 @@ if __name__ == '__main__':
 
             # return value
             values = []
-            datasource = "%(hostname)s.isup" % locals()
+            datasource = (hostname, 'isup')
             value = result['result']
             values.append((datasource, value, mks.getTimestamp()))
 
