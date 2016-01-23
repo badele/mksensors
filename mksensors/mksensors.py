@@ -3,7 +3,6 @@
 
 """
 Usage:
-  mksensors init
   mksensors sensor new SENSORNAME SENSORLIBRARYNAME [--force]  [--param=<param>]
   mksensors sensor list
   mksensors sensor remove SENSORNAME
@@ -19,8 +18,7 @@ Options:
   -h --help     Show this screen.
 
 Examples:
-    sudo mksensors init
-    sudo mksensors sender new sender.file --param="'location': '/usr/local/mksensors/log'"
+    sudo mksensors sender new sender.file --param="'location': '/opt/mksensors/datas/log'"
     sudo mksensors new testping sensor.network --param="'hostnames': ['8.8.8.8', '8.8.4.4'], 'filters': ['avg_rtt']"
 """
 
@@ -122,132 +120,11 @@ def newSender(sendertype, params, **kwargs):
     )
 
 
-def initMkSensors():
-    """
-    Init the mksensors configuration, it check
-     - Check if supervisorctl executable is present
-     - Check if /etc/supervisord.d folder exists
-     - Create supervisor systemd launcher
-     - Create /usr/local/mksensors folder
-    """
-
-    errormsg = ""
-
-    ################################
-    # Supervisor checker
-    ################################
-
-    # Check Supervisorctl executable
-    supervisord = find_executable('supervisord')
-    supervisorctl = find_executable('supervisorctl')
-    if supervisorctl is None:
-        errormsg += "* Cannot find the supervisorctl executable\n"
-
-    # Check /etc/supervisord.d folder
-    supervisordir = mks.SUPERVISORDIR
-    folderexists = os.path.isdir(supervisordir)
-    if not folderexists:
-        os.mkdir(supervisordir)
-
-    # Check supervisord.conf file
-    supervisordconf = '%s/supervisord.conf' % mks.CONFDIR
-    fileexists = os.path.isfile(supervisordconf)
-    if not fileexists:
-        content = """[unix_http_server]
-file=/tmp/supervisor_mksensors.sock
-[supervisord]
-logfile=/tmp/supervisord_mksensors.log
-logfile_maxbytes=50MB
-logfile_backups=10
-loglevel=info
-pidfile=/tmp/supervisord_mksensors.pid
-nodaemon=false
-minfds=1024
-minprocs=200
-[rpcinterface:supervisor]
-supervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface
-[supervisorctl]
-serverurl=unix:///tmp/supervisor_mksensors.sock
-[include]
-files = %(supervisordir)s/*.conf""" % locals()
-        mks.saveto(supervisordconf, content)
-
-    ################################
-    # Systemd startup script
-    ################################
-
-    dirname = os.path.dirname(sys.executable)
-    systemctl = find_executable('systemctl')
-    if systemctl:
-        content = """[Unit]
-Description=Supervisor process control system for UNIX
-Documentation=http://supervisord.org
-After=network.target
-
-[Service]
-ExecStart=%(supervisord)s -n -c %(supervisordconf)s
-ExecStop=%(supervisorctl)s shutdown
-ExecReload=%(supervisorctl)s reload
-KillMode=process
-Restart=on-failure
-RestartSec=50s
-
-[Install]
-WantedBy=multi-user.target""" % locals()
-
-        mks.saveto('/etc/systemd/system/mksensors.service', content)
-
-    # Create supervisorctl alias
-    content = """#!/bin/bash
-%(supervisorctl)s -c %(supervisordconf)s $*""" % locals()
-
-    mks.saveto(mks.MKSENSORSCTL, content)
-    fd = os.open(mks.MKSENSORSCTL, os.O_RDONLY)
-    os.fchmod(fd, stat.S_IRUSR | stat.S_IWUSR | stat.S_IEXEC)
-
-    ################################
-    # Mksensors user & folders
-    ################################
-
-    # uid = -1
-    # try:
-    #     uid = pwd.getpwnam('mksensors').pw_uid
-    # except KeyError:
-    #     executable = find_executable('systemctl')
-    #     if executable:
-    #         randomvalue = "%032x" % random.getrandbits(128)
-    #         md5 = hashlib.md5(randomvalue).hexdigest()
-    #         userdir = mks.USERDIR
-    #         os.system("useradd -p '%(md5)s' -d '%(userdir)s' mksensors" % locals())
-    #
-    # # Check and create mksensors user scripts folder
-    # folderexists = os.path.isdir(mks.USERDIR)
-    # if not folderexists:
-    #     os.makedirs(mks.USERDIR)
-    #
-    # if folderexists:
-    #     fd = os.open(mks.USERDIR, os.O_RDONLY)
-    #     os.fchown(fd, uid, 0)
-    #     os.fchmod(fd, stat.S_ISUID | stat.S_IRUSR | stat.S_IWUSR | stat.S_IEXEC)
-
-    # Check and create mksensors folders
-    checkdirs = [mks.CONFDIR, mks.BINDIR, mks.LOGDIR]
-    for checkdir in checkdirs:
-        folderexists = os.path.isdir(checkdir)
-        if not folderexists:
-            os.makedirs(checkdir)
-
-    if errormsg != "":
-        print errormsg
-
 def main():
     argopts = docopt(__doc__)
 
     # Force use root account
     rootRequire()
-
-    if argopts['init']:
-        initMkSensors()
 
     ###############################
     # Sensor

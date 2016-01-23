@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 
 """
-mksensors sender new sender.rrd --param="'location': '/usr/local/mksensors/rrd'"
+apt-get install rrdtool python-dev librrd-dev
+mksensors sender new sender.rrd --param="'location': '/opt/mksensors/datas/rrd'"
 """
 
 __authors__ = 'Bruno Adelé <bruno@adele.im>'

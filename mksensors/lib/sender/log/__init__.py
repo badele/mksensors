@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-mksensors sender new sender.log --param="'location': '/usr/local/mksensors/log'"
+mksensors sender new sender.log --param="'location': '/opt/mksensors/datas/log'"
 """
 
 __authors__ = 'Bruno Adelé <bruno@adele.im>'

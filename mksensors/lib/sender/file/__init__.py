@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-mksensors sender new sender.file --param="'location': '/usr/local/mksensors/file'"
+mksensors sender new sender.file --param="'location': '/opt/mksensors/datas/file'"
 """
 
 __authors__ = 'Bruno Adelé <bruno@adele.im>'

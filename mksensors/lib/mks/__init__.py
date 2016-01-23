@@ -27,12 +27,11 @@ import yaml
 
 # Default Constant
 LIBDIR = os.path.abspath(os.path.join(__file__, '../../../templates'))
-MKSROOT = '/usr/local/mksensors'
-CONFDIR = '%(MKSROOT)s/conf' % locals()
-BINDIR = '%(MKSROOT)s/bin' % locals()
-LOGDIR = '%(MKSROOT)s/log' % locals()
+MKSROOT = '/opt/mksensors'
+CONFDIR = '%(MKSROOT)s/datas/conf' % locals()
+BINDIR = '%(MKSROOT)s/datas/bin' % locals()
+LOGDIR = '%(MKSROOT)s/datas/log' % locals()
 SUPERVISORDIR = '%(CONFDIR)s/supervisord.d' % locals()
-MKSENSORSCTL = '/usr/local/bin/mksensorsctl'
 
 def getTimestamp():
     now = datetime.datetime.now()
