@@ -124,7 +124,7 @@ def createSupervisorConf(sensorname, sensorlibraryname, params, **kwargs):
     localparams['python'] = sys.executable
     localparams['sensorname'] = sensorname
     localparams['sensorcmd'] = getSensorBinPath(sensorname) + '/__init__.py'
-
+    localparams['logdir'] = LOGDIR
 
     # Prepare supervisor.conf
     sconf = """[program:%(sensorname)s]
@@ -132,6 +132,7 @@ command=%(python)s %(sensorcmd)s
 autostart=true
 autorestart=true
 redirect_stderr=true
+stdout_logfile=%(logdir)s/sensor_%(sensorname)s.log
 startsecs=5""" % localparams
 
     # Write configuration
