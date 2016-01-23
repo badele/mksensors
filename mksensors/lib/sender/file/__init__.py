@@ -18,8 +18,6 @@ def checkRequirements():
    pass
 
 class Sender(object):
-    """Check if host reply a ICMP request"""
-
     def __init__(self, sensorname, datasources, conf):
         self.sensorname = sensorname
         self.datasources = datasources

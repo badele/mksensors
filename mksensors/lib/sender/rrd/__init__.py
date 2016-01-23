@@ -38,8 +38,6 @@ def checkRequirements():
 
 
 class Sender(object):
-    """Check if host reply a ICMP request"""
-
     def __init__(self, sensorname, datasources, conf):
         self.myrrdtool = __import__('rrdtool')
 
