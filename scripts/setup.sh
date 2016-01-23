@@ -94,7 +94,7 @@ supervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface
 [supervisorctl]
 serverurl=unix:///tmp/supervisor_mksensors.sock
 [include]
-files = $destdir/datas/supervisord.d/*.conf
+files = $destdir/datas/conf/supervisord.d/*.conf
 EOF
     fi
 
@@ -109,7 +109,7 @@ Documentation=http://supervisord.org
 After=network.target
 
 [Service]
-ExecStart=$destdir/bin/supervisorctl -n -c $destdir/datas/conf/supervisord.conf
+ExecStart=$destdir/bin/supervisord -n -c $destdir/datas/conf/supervisord.conf
 ExecStop=$destdir/bin/supervisorctl shutdown
 ExecReload=$destdir/bin/supervisorctl reload
 KillMode=process
@@ -130,7 +130,7 @@ EOF
     filename="/usr/local/bin/mksensorsctl"
     cat << EOF > "$filename"
 #!/bin/bash
-$destdir/bin/supervisorctl-c $destdir/datas/conf/supervisord.conf \$*
+$destdir/bin/supervisorctl -c $destdir/datas/conf/supervisord.conf \$*
 EOF
     chmod 755 $filename
 
