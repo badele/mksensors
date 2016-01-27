@@ -6,6 +6,8 @@ __description__="""Tool for easily create sensors daemons"""
 __license__='GPL'
 __version__='0.0.1'
 
+# Add Fedora support - Claude Migne - 2016-01-27
+
 # Vars
 destdir="/opt/mksensors"
 pip="$destdir/bin/pip"
@@ -44,6 +46,12 @@ getLinuxType() {
         echo 'archlinux'
         return
     fi
+
+    source /etc/os-release
+    if [ $ID = "fedora" ] && [ $VERSION_ID = "22" ]; then
+   		echo $ID
+    	return
+	fi
 
     echo "undefined"
 
@@ -163,6 +171,19 @@ install_archlinux_req() {
     fi
 }
 
+install_fedora_req() {
+	toinstall=""
+   toinstall="$toinstall $(checkToInstall /usr/bin/git git)"
+   toinstall="$toinstall $(checkToInstall /usr/bin/python python-pip)"
+   toinstall="$toinstall $(checkToInstall /usr/bin/virtualenv python-virtualenv)"
+   toinstall=$(echo "$toinstall" | xargs)
+
+   if [ "$toinstall" != "" ]; then
+       dnf update
+       dnf install $toinstall
+   fi
+}
+
 
 # Install requirements packages with
 # Linux type package manager
@@ -175,6 +196,9 @@ install_requirements() {
         archlinux)
             install_archlinux_req
             ;;
+        fedora)
+        	install_fedora_req
+        	;;
         undefined)
             echo "Please install git python-pip"
     esac
