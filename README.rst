@@ -22,8 +22,8 @@ All command must run with **root** account
 
    # Add sender
    # [Debian] apt-get install rrdtool python-dev librrd-dev
-   sudo mksensors sender new sender.rrd --param="'location': '/opt/mksensors/datas/rrd'"
-   sudo mksensors sender new sender.log --param="'location': '/opt/mksensors/datas/log'"
+   sudo mksensors sender new sender.rrd --param="'location': '/var/lib/mksensors/datas/rrd'"
+   sudo mksensors sender new sender.log --param="'location': '/var/lib/mksensors/datas/log'"
 
    # Add sensors
    sudo mksensors sensor new testping sensor.network.ping --param="'hostnames': ['8.8.8.8', '8.8.4.4']"

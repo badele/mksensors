@@ -9,8 +9,9 @@ __version__='0.0.1'
 # Add Fedora support - Claude Migne - 2016-01-27
 
 # Vars
-destdir="/opt/mksensors"
-pip="$destdir/bin/pip"
+MKSPROGRAM="/opt/mksensors"
+MKSDATA="/var/lib/mksensors"
+pip="$MKSPROGRAM/bin/pip"
 
 # Check if the script run with the root account
 checkRootUser() {
@@ -58,8 +59,8 @@ getLinuxType() {
 }
 
 install_pip(){
-    if [ ! -x "$destdir/bin/mksensors" ]; then
-        virtualenv --setuptools --no-site-packages $destdir
+    if [ ! -x "$MKSPROGRAM/bin/mksensors" ]; then
+        virtualenv --setuptools --no-site-packages $MKSPROGRAM
     fi
 }
 
@@ -69,21 +70,21 @@ install_mksensors(){
 
 check_mksensors_configuration(){
     # Create directories
-    for createpath in bin conf log
+    for createpath in bin etc datas log
     do
-        if [ ! -d "$destdir/datas/$createpath" ]; then
-            mkdir -p "$destdir/datas/$createpath"
+        if [ ! -d "$MKSDATA/$createpath" ]; then
+            mkdir -p "$MKSDATA/$createpath"
         fi
     done
 
     # Check /etc/supervisord.d folder
-    dirname="$destdir/datas/conf/supervisord.d"
+    dirname="$MKSDATA/etc/supervisord.d"
     if [ ! -d "$dirname" ]; then
         mkdir -p $dirname
     fi
 
     # Check supervisord.conf file
-    filename="$destdir/datas/conf/supervisord.conf"
+    filename="$MKSDATA/etc/supervisord.conf"
     if [ ! -x "$filename" ]; then
         cat << EOF > "$filename"
 [unix_http_server]
@@ -102,7 +103,7 @@ supervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface
 [supervisorctl]
 serverurl=unix:///tmp/supervisor_mksensors.sock
 [include]
-files = $destdir/datas/conf/supervisord.d/*.conf
+files = $MKSDATA/etc/supervisord.d/*.conf
 EOF
     fi
 
@@ -117,9 +118,9 @@ Documentation=http://supervisord.org
 After=network.target
 
 [Service]
-ExecStart=$destdir/bin/supervisord -n -c $destdir/datas/conf/supervisord.conf
-ExecStop=$destdir/bin/supervisorctl shutdown
-ExecReload=$destdir/bin/supervisorctl reload
+ExecStart=$MKSPROGRAM/bin/supervisord -n -c $MKSDATA/etc/supervisord.conf
+ExecStop=$MKSPROGRAM/bin/supervisorctl shutdown
+ExecReload=$MKSPROGRAM/bin/supervisorctl reload
 KillMode=process
 Restart=on-failure
 RestartSec=50s
@@ -131,14 +132,14 @@ EOF
 
     # Create mksensors alias
     if [ ! -L /usr/local/bin/mksensors ]; then
-        ln -s "$destdir/bin/mksensors" /usr/local/bin/mksensors
+        ln -s "$MKSPROGRAM/bin/mksensors" /usr/local/bin/mksensors
     fi
 
     # Create supervisorctl alias
     filename="/usr/local/bin/mksensorsctl"
     cat << EOF > "$filename"
 #!/bin/bash
-$destdir/bin/supervisorctl -c $destdir/datas/conf/supervisord.conf \$*
+$MKSPROGRAM/bin/supervisorctl -c $MKSDATA/etc/supervisord.conf \$*
 EOF
     chmod 755 $filename
 

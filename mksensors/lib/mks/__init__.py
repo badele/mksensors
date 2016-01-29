@@ -27,10 +27,10 @@ import yaml
 
 # Default Constant
 LIBDIR = os.path.abspath(os.path.join(__file__, '../../../templates'))
-MKSROOT = '/opt/mksensors'
-CONFDIR = '%(MKSROOT)s/datas/conf' % locals()
-BINDIR = '%(MKSROOT)s/datas/bin' % locals()
-LOGDIR = '%(MKSROOT)s/datas/log' % locals()
+MKSDATA = '/var/lib/mksensors'
+CONFDIR = '%(MKSDATA)s/etc' % locals()
+BINDIR = '%(MKSDATA)s/bin' % locals()
+LOGDIR = '%(MKSDATA)s/log' % locals()
 SUPERVISORDIR = '%(CONFDIR)s/supervisord.d' % locals()
 
 def getTimestamp():
@@ -203,11 +203,7 @@ def createSenderConfig(sendertype, params, **kwargs):
     conffilename = '%(etc)s/sender.yml' % locals()
 
     # Merge configuration
-    conf = {}
-    if os.path.isfile(conffilename):
-        with open(conffilename, 'r') as stream:
-            conf = yaml.load(stream)
-
+    conf = loadSenderConfig()
     conf[sendertype] = {}
     for key in params.keys():
         conf[sendertype][key] = params[key]
@@ -216,7 +212,7 @@ def createSenderConfig(sendertype, params, **kwargs):
     saveto(conffilename, yaml.dump(conf, default_flow_style=False))
 
 
-def loadSenderObject(sensorname, datasources):
+def loadSenderConfig(sendername=None):
     conf = CONFDIR
     conffilename = '%(conf)s/sender.yml' % locals()
 
@@ -225,11 +221,18 @@ def loadSenderObject(sensorname, datasources):
         with open(conffilename, 'r') as stream:
             conf = yaml.load(stream)
 
+    if sendername is None:
+        return conf
+    else:
+        return conf.get(sendername, {})
+
+def loadSenderObject(sensorname, datasources):
+    senderconfig = loadSenderConfig()
     senders = []
-    for key in conf:
+    for key in senderconfig:
         modulename = 'mksensors.lib.%s' % key
         mod = loadModule(modulename)
-        obj = mod.Sender(sensorname, datasources, conf)
+        obj = mod.Sender(sensorname, datasources, senderconfig)
         obj.initSender()
         senders.append(obj)
 
