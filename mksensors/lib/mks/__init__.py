@@ -14,7 +14,7 @@ import time
 import pip
 import datetime
 import pkg_resources
-from shutil import copytree, rmtree
+from shutil import copyfile, copytree, rmtree
 from copy import deepcopy
 
 try:
@@ -26,7 +26,7 @@ except:
 import yaml
 
 # Default Constant
-LIBDIR = os.path.abspath(os.path.join(__file__, '../../../templates'))
+MKSPROGRAM = os.path.abspath(os.path.join(__file__, '../../..'))
 MKSDATA = '/var/lib/mksensors'
 CONFDIR = '%(MKSDATA)s/etc' % locals()
 BINDIR = '%(MKSDATA)s/bin' % locals()
@@ -91,7 +91,8 @@ def datasource2String(datasources, separator):
 def getSensorLibraryPath(sensorlibraryname):
     """Get main sensor python project file"""
 
-    libdir = LIBDIR
+    mksprogram = MKSPROGRAM
+    libdir = '%(mksprogram)s/templates' % locals()
     subpath = sensorlibraryname.replace('.', '/')
     sensorlibrarypath = "%(libdir)s/%(subpath)s" % locals()
 
@@ -200,16 +201,18 @@ def createSenderConfig(sendertype, params, **kwargs):
 
     # Sender configuration filename
     etc = CONFDIR
-    conffilename = '%(etc)s/sender.yml' % locals()
+    mksprogram = MKSPROGRAM
+    libdir = '%(mksprogram)s/lib' % locals()
+    subpath = sendertype.replace('.', '/')
 
-    # Merge configuration
-    conf = loadSenderConfig()
-    conf[sendertype] = {}
-    for key in params.keys():
-        conf[sendertype][key] = params[key]
+    srcconf = '%(libdir)s/%(subpath)s/configuration.sample.yml' % locals()
+    dstconf = '%(etc)s/%(sendertype)s.yml' % locals()
 
-    # Save to YAML format
-    saveto(conffilename, yaml.dump(conf, default_flow_style=False))
+
+    if not os.path.isfile(dstconf):
+        copyfile(srcconf, dstconf)
+
+    print "%(sendertype)s configuration in %(dstconf)s" % locals()
 
 
 def loadSenderConfig(sendername=None):

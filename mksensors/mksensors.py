@@ -109,6 +109,8 @@ def ListSensors():
 def newSender(sendertype, params, **kwargs):
     # Check packages installation
     modulename = 'mksensors.lib.%s' % sendertype
+
+    # Check sender requirements
     mod = mks.loadModule(modulename)
     mod.checkRequirements()
 

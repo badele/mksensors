@@ -1,0 +1,1 @@
+location: '/tmp/mksensors/rrd' # Folder location for storing the sensors values in the rdd database

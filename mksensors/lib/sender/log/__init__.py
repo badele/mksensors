@@ -19,6 +19,7 @@ from mksensors.lib import mks
 def checkRequirements():
    pass
 
+
 class Sender(object):
     def __init__(self, sensorname, datasources, conf):
         self.sensorname = sensorname

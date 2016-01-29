@@ -4,6 +4,8 @@
 """
 apt-get install rrdtool python-dev librrd-dev
 mksensors sender new sender.rrd --param="'location': '/opt/mksensors/datas/rrd'"
+save dump for convert to another computer: for f in *.rrd; do rrdtool dump ${f} > ${f}.xml; done
+restore from xml file: for f in *.xml; do rrdtool restore ${f} `echo ${f} | sed s/\.xml//`; done
 """
 
 __authors__ = 'Bruno Adelé <bruno@adele.im>'
@@ -32,9 +34,8 @@ def checkRequirements():
         sys.exit()
 
     # Check
-    packages = ['rrdtool==0.1.2']
+    packages = ['python-rrdtool==1.4.7']
     mks.checkOrInstallPackages(packages)
-
 
 
 class Sender(object):
