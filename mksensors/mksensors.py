@@ -108,9 +108,9 @@ def ListSensors():
         #     sensormod = mks.loadModule(sensorfilename)
 
 
-def enableSender(sendertype, **kwargs):
+def enableSender(sendername, **kwargs):
     # Check packages installation
-    modulename = 'mksensors.lib.%s' % sendertype
+    modulename = 'mksensors.lib.sender.%s' % sendername
 
     # Check sender requirements
     mod = mks.loadModule(modulename)
@@ -118,7 +118,7 @@ def enableSender(sendertype, **kwargs):
 
     # Create sensor user configuration
     mks.enableSenderConfig(
-        sendertype=sendertype,
+        sendername=sendername,
         #params=params,
         **kwargs
     )
@@ -126,7 +126,7 @@ def enableSender(sendertype, **kwargs):
 def disableSender(sendertype, **kwargs):
     # Create sensor user configuration
     mks.disableSenderConfig(
-        sendertype=sendertype,
+        sendername=sendertype,
         #params=params,
         **kwargs
     )
@@ -167,7 +167,7 @@ def main():
     if argopts['enable']:
         if argopts['sender']:
             enableSender(
-                sendertype=argopts['SENDERTYPE'],
+                sendername=argopts['SENDERTYPE'],
                 #params=mks.convertStrintToDict(argopts['--param']),
                 **argopts
             )

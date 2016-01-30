@@ -196,18 +196,17 @@ def createSensorConfig(sensorname, params, **kwargs):
     saveto(conffilename, yaml.dump(conf, default_flow_style=False))
 
 
-def enableSenderConfig(sendertype, **kwargs):
+def enableSenderConfig(sendername, **kwargs):
     """Enable sender YAML configuration file"""
 
     # Sender configuration filename
     etc = CONFDIR
     mksprogram = MKSPROGRAM
     libdir = '%(mksprogram)s/lib' % locals()
-    subpath = sendertype.replace('.', '/')
 
-    srcconf = '%(libdir)s/%(subpath)s/configuration.sample.yml' % locals()
-    dstconf = '%(etc)s/%(sendertype)s.yml' % locals()
-    disabledconf = '%(etc)s/%(sendertype)s.yml.disabled' % locals()
+    srcconf = '%(libdir)s/sender/%(sendername)s/configuration.sample.yml' % locals()
+    dstconf = '%(etc)s/sender_%(sendername)s.yml' % locals()
+    disabledconf = '%(etc)s/sender_%(sendername)s.yml.disabled' % locals()
 
     # If configuration is disabled, just enable it
     if os.path.isfile(disabledconf):
@@ -219,21 +218,20 @@ def enableSenderConfig(sendertype, **kwargs):
     else:
         copyfile(srcconf, dstconf)
 
-    print "%(sendertype)s configuration in '%(dstconf)s'" % locals()
+    print "%(sendername)s sender configuration in '%(dstconf)s'" % locals()
 
 
-def disableSenderConfig(sendertype, **kwargs):
+def disableSenderConfig(sendername, **kwargs):
     """Disable sender YAML configuration file"""
 
     # Sender configuration filename
     etc = CONFDIR
     mksprogram = MKSPROGRAM
     libdir = '%(mksprogram)s/lib' % locals()
-    subpath = sendertype.replace('.', '/')
 
-    srcconf = '%(libdir)s/%(subpath)s/configuration.sample.yml' % locals()
-    dstconf = '%(etc)s/%(sendertype)s.yml' % locals()
-    disabledconf = '%(etc)s/%(sendertype)s.yml.disabled' % locals()
+    srcconf = '%(libdir)s/sender/%(sendername)s/configuration.sample.yml' % locals()
+    dstconf = '%(etc)s/sender_%(sendername)s.yml' % locals()
+    disabledconf = '%(etc)s/sender_%(sendername)s.yml.disabled' % locals()
 
     # If configuration is enabled, just disable it
     if os.path.isfile(dstconf):
@@ -243,7 +241,7 @@ def disableSenderConfig(sendertype, **kwargs):
 
         move(dstconf, disabledconf)
 
-    print "%(sendertype)s is now disabled" % locals()
+    print "%(sendername)s sender is now disabled" % locals()
 
 
 def loadSenderConfig(sendername=None):
