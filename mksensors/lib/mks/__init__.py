@@ -14,7 +14,7 @@ import time
 import pip
 import datetime
 import pkg_resources
-from shutil import copyfile, copytree, rmtree
+from shutil import copyfile, copytree, rmtree, move
 from copy import deepcopy
 
 try:
@@ -196,8 +196,8 @@ def createSensorConfig(sensorname, params, **kwargs):
     saveto(conffilename, yaml.dump(conf, default_flow_style=False))
 
 
-def createSenderConfig(sendertype, params, **kwargs):
-    """Create sensor YAML configuration file"""
+def enableSenderConfig(sendertype, **kwargs):
+    """Enable sender YAML configuration file"""
 
     # Sender configuration filename
     etc = CONFDIR
@@ -207,12 +207,43 @@ def createSenderConfig(sendertype, params, **kwargs):
 
     srcconf = '%(libdir)s/%(subpath)s/configuration.sample.yml' % locals()
     dstconf = '%(etc)s/%(sendertype)s.yml' % locals()
+    disabledconf = '%(etc)s/%(sendertype)s.yml.disabled' % locals()
 
+    # If configuration is disabled, just enable it
+    if os.path.isfile(disabledconf):
+        if os.path.isfile(dstconf):
+            raise Exception("'%(dstconf)s' allready exist, cannot activate the '%(sendertype)s'\n"
+                            "Please remove '%(disabledconf)s' or '%(dstconf)s'" % locals())
 
-    if not os.path.isfile(dstconf):
+        move(disabledconf, dstconf)
+    else:
         copyfile(srcconf, dstconf)
 
-    print "%(sendertype)s configuration in %(dstconf)s" % locals()
+    print "%(sendertype)s configuration in '%(dstconf)s'" % locals()
+
+
+def disableSenderConfig(sendertype, **kwargs):
+    """Disable sender YAML configuration file"""
+
+    # Sender configuration filename
+    etc = CONFDIR
+    mksprogram = MKSPROGRAM
+    libdir = '%(mksprogram)s/lib' % locals()
+    subpath = sendertype.replace('.', '/')
+
+    srcconf = '%(libdir)s/%(subpath)s/configuration.sample.yml' % locals()
+    dstconf = '%(etc)s/%(sendertype)s.yml' % locals()
+    disabledconf = '%(etc)s/%(sendertype)s.yml.disabled' % locals()
+
+    # If configuration is enabled, just disable it
+    if os.path.isfile(dstconf):
+        if os.path.isfile(disabledconf):
+            raise Exception("'%(disabledconf)s' allready exist, cannot activate the '%(sendertype)s'\n"
+                            "Please remove '%(dstconf)s' or '%(disabledconf)s'" % locals())
+
+        move(dstconf, disabledconf)
+
+    print "%(sendertype)s is now disabled" % locals()
 
 
 def loadSenderConfig(sendername=None):

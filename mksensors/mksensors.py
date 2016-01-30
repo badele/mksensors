@@ -3,10 +3,12 @@
 
 """
 Usage:
+  mksensors enable sender SENDERTYPE [-d | --debug]
+  mksensors disable sender SENDERTYPE [-d | --debug]
   mksensors sensor new SENSORNAME SENSORLIBRARYNAME [--force]  [--param=<param>]
   mksensors sensor list
   mksensors sensor remove SENSORNAME
-  mksensors sender new SENDERTYPE [--param=<param>]
+  mksensors -d | --debug
   mksensors -h | --help
 
 Arguments:
@@ -15,6 +17,7 @@ Arguments:
   SENDERTYPE 	    Sender type (ex: sender.file, sender.mqtt)
 
 Options:
+  -d --debug    Active debug
   -h --help     Show this screen.
 
 Examples:
@@ -39,7 +42,6 @@ from docopt import docopt
 
 
 from lib import mks
-
 
 def rootRequire():
     """Check if run root session"""
@@ -106,7 +108,7 @@ def ListSensors():
         #     sensormod = mks.loadModule(sensorfilename)
 
 
-def newSender(sendertype, params, **kwargs):
+def enableSender(sendertype, **kwargs):
     # Check packages installation
     modulename = 'mksensors.lib.%s' % sendertype
 
@@ -115,11 +117,20 @@ def newSender(sendertype, params, **kwargs):
     mod.checkRequirements()
 
     # Create sensor user configuration
-    mks.createSenderConfig(
+    mks.enableSenderConfig(
         sendertype=sendertype,
-        params=params,
+        #params=params,
         **kwargs
     )
+
+def disableSender(sendertype, **kwargs):
+    # Create sensor user configuration
+    mks.disableSenderConfig(
+        sendertype=sendertype,
+        #params=params,
+        **kwargs
+    )
+
 
 
 def main():
@@ -127,6 +138,10 @@ def main():
 
     # Force use root account
     rootRequire()
+
+    # Debug mode
+    if not argopts['--debug']:
+        sys.tracebacklimit = 0
 
     ###############################
     # Sensor
@@ -147,14 +162,23 @@ def main():
         ListSensors()
 
     ###############################
-    # Sensor
+    # Enable / Disable
     ###############################
-    if argopts['sender'] and argopts['new']:
-        newSender(
-            sendertype=argopts['SENDERTYPE'],
-            params=mks.convertStrintToDict(argopts['--param']),
-            **argopts
-        )
+    if argopts['enable']:
+        if argopts['sender']:
+            enableSender(
+                sendertype=argopts['SENDERTYPE'],
+                #params=mks.convertStrintToDict(argopts['--param']),
+                **argopts
+            )
+
+    if argopts['disable']:
+        if argopts['sender']:
+            disableSender(
+                sendertype=argopts['SENDERTYPE'],
+                #params=mks.convertStrintToDict(argopts['--param']),
+                **argopts
+            )
 
 
 if __name__ == '__main__':
