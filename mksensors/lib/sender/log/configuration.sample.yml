@@ -1,1 +1,1 @@
-location: '/tmp/mksensors/log' # Folder location for storing the sensors values
+location: '<SAMPLE>/var/lib/mksensors/datas/log</SAMPLE>' # Folder location for storing the sensors values

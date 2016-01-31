@@ -1,0 +1,2 @@
+broker: '<SAMPLE>mqtt.hostname.com</SAMPLE>' # The mqtt address
+topic: '<SAMPLE>mksensors/homesensors/</SAMPLE>' # The topic name where sensors values store

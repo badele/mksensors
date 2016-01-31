@@ -8,7 +8,6 @@ Usage:
   mksensors add sensor SENSORNAME SENSORLIBRARYNAME [-d | --debug] [--force]
   mksensors disable sensor SENSORNAME [-d | --debug]
   mksensors remove sensor SENSORNAME [-d | --debug]
-  mksensors check [-d | --debug]
   mksensors list sensors [-d | --debug]
   mksensors -d | --debug
   mksensors -h | --help
@@ -117,7 +116,8 @@ def enableSender(sendername, **kwargs):
 
     # Check sender requirements
     mod = mks.loadModule(modulename)
-    mod.checkRequirements()
+    senderobj = mod.Sender()
+    senderobj.checkRequirements()
 
     # Create sensor user configuration
     mks.enableSenderConfig(
@@ -125,6 +125,9 @@ def enableSender(sendername, **kwargs):
         #params=params,
         **kwargs
     )
+
+    # Check mksensors configuration
+    checkMkSensors()
 
 def disableSender(sendertype, **kwargs):
     # Create sensor user configuration
@@ -143,7 +146,6 @@ def checkMkSensors():
         senderobj = mod.Sender()
         senderobj.checkConfiguration()
 
-    print "Your mksensors is checked"
 
 
 def main():
@@ -175,9 +177,6 @@ def main():
     if argopts['list']:
         if argopts['sensors']:
             ListSensors()
-
-    if argopts['check']:
-        checkMkSensors()
 
     ###############################
     # Enable / Disable

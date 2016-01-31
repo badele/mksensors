@@ -24,12 +24,12 @@ def checkRequirements():
 
 
 if __name__ == '__main__':
-    params = mks.loadSensorConfig()
     sensorname = mks.getSensorName()
+    config = mks.loadSensorConfig(sensorname)
 
     # Set default parameters
-    hostnames = params.get('hostnames', [])
-    filters = params.get(
+    hostnames = config.get('hostnames', [])
+    filtered_ds = config.get(
         'datasources', [
             'max_rtt', 'min_rtt', 'avg_rtt', 'packet_lost',
             'packet_size', 'timeout', 'result',
@@ -39,17 +39,17 @@ if __name__ == '__main__':
     # Set datasource list
     datasources = []
     for hostname in hostnames:
-        for filter in filters:
-            dsnames = (hostname, filter)
+        for filtered in filtered_ds:
+            dsnames = (hostname, filtered)
             datasources.append(dsnames)
 
-    senders = mks.loadSenderObject(sensorname, datasources)
+    senders = mks.getEnabledSenderObjects(sensorname, datasources)
 
     while True:
         # Ping for all hostnames
         for hostname in hostnames:
             # Test connexion
-            rping = ping.ping(destination=hostname, **params)
+            rping = ping.ping(destination=hostname, **config)
             rping.run()
             result = deepcopy(rping.results)
             result['sensorname'] = sensorname
@@ -57,11 +57,11 @@ if __name__ == '__main__':
 
             # return value
             values = []
-            for filter in filters:
-                datasource = (hostname, filter)
-                value = result[filter]
+            for filtered in filtered_ds:
+                datasource = (hostname, filtered)
+                value = result[filtered]
                 values.append((datasource, value, mks.getTimestamp()))
 
             mks.sendValues(senders, sensorname, values)
         # Sleep
-        time.sleep(params['pause'])
+        time.sleep(config['pause'])

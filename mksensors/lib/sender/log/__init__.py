@@ -14,27 +14,28 @@ __version__ = '0.0.1'
 import os
 
 from mksensors.lib import mks
+from mksensors.lib.mks.plugins import SenderPlugin
 
 
-def checkRequirements():
-   pass
+class Sender(SenderPlugin):
+    def __init__(self):
+        """Init sender class"""
+        super(Sender, self).__init__()
+        self.sendertype = 'log'
+        self.config = mks.loadSenderConfig(self.sendertype)
 
-
-class Sender(object):
-    def __init__(self, sensorname, datasources, conf):
-        self.sensorname = sensorname
-        self.datasources = datasources
-        self.conf = conf.get('sender.log', {})
+        # Init variable
         self._file = None
 
+    def initSender(self, sensorname, datasources):
+        """Init the sender object parameters"""
+        super(Sender, self).initSender(sensorname, datasources)
 
-    def initSender(self):
-
-        if 'location' not in self.conf:
+        if 'location' not in self.config:
             raise Exception("Location is not define")
 
         # Check folder
-        location = self.conf['location']
+        location = self.config['location']
         if not os.path.isdir(location):
             os.makedirs(location)
 
@@ -42,8 +43,8 @@ class Sender(object):
         logfilename = '%(location)s/sender.log' % locals()
         self._file = open(logfilename, "a")
 
-
     def sendValues(self, sensorname, items):
+        """Send value to the sender storage"""
         for item in items:
             (datasource, value, ts) = item
             dsname = mks.datasource2String(datasource, '.')

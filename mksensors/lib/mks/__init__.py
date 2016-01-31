@@ -10,10 +10,13 @@ __version__ = '0.0.1'
 import os
 import sys
 import ast
+import glob
 import time
 import pip
 import datetime
 import pkg_resources
+import traceback
+
 from shutil import copyfile, copytree, rmtree, move
 from copy import deepcopy
 
@@ -88,15 +91,15 @@ def datasource2String(datasources, separator):
 
     return result
 
-def getSensorLibraryPath(sensorlibraryname):
+def getSensorTemplatePath(sensorlibraryname):
     """Get main sensor python project file"""
 
     mksprogram = MKSPROGRAM
-    libdir = '%(mksprogram)s/templates' % locals()
+    templatedir = '%(mksprogram)s/templates/sensor' % locals()
     subpath = sensorlibraryname.replace('.', '/')
-    sensorlibrarypath = "%(libdir)s/%(subpath)s" % locals()
+    sensortemplatepath = "%(templatedir)s/%(subpath)s" % locals()
 
-    return sensorlibrarypath
+    return sensortemplatepath
 
 
 def getSensorBinPath(sensorname):
@@ -117,24 +120,22 @@ def getSensorLogPath(sensorname):
     return sensorlogpath
 
 
-def createSupervisorConf(sensorname, sensorlibraryname, params, **kwargs):
+def addSupervisorConf(sensorname, sensorlibraryname, **kwargs):
     """Create supervisor conf for sensor"""
 
     # Add parameters
-    localparams = deepcopy(params)
-    localparams['python'] = sys.executable
-    localparams['sensorname'] = sensorname
-    localparams['sensorcmd'] = getSensorBinPath(sensorname) + '/__init__.py'
-    localparams['logdir'] = LOGDIR
+    pythonexec = sys.executable
+    sensorcmd = getSensorBinPath(sensorname) + '/__init__.py'
+    logdir = LOGDIR
 
     # Prepare supervisor.conf
     sconf = """[program:%(sensorname)s]
-command=%(python)s %(sensorcmd)s
+command=%(pythonexec)s %(sensorcmd)s
 autostart=true
 autorestart=true
 redirect_stderr=true
 stdout_logfile=%(logdir)s/sensor_%(sensorname)s.log
-startsecs=5""" % localparams
+startsecs=5""" % locals()
 
     # Write configuration
     supervisordir = SUPERVISORDIR
@@ -162,38 +163,44 @@ def removeSensorUser(sensorname):
         rmtree(sensoruserpath)
 
 
-def copySensorLibraryToUser(sensorname, sensorlibraryname, params,  **kwargs):
+def copySensorTemplateToUserBin(sensorname, sensorlibraryname, **kwargs):
     """Copy sensor template to user script folder"""
 
-    sensorlibrarypath = getSensorLibraryPath(sensorlibraryname)
+    sensorlibrarypath = getSensorTemplatePath(sensorlibraryname)
     sensoruserpath = getSensorBinPath(sensorname)
 
     if os.path.isdir(sensoruserpath) and kwargs['--force'] is False:
-        print '%(sensorname)s allready exist in %(sensoruserpath)s' % locals()
+        print '%(sensorname)s sensor allready exist in %(sensoruserpath)s' % locals()
     else:
         if os.path.isdir(sensoruserpath):
             rmtree(sensoruserpath)
         copytree(sensorlibrarypath, sensoruserpath)
 
 
-def createSensorConfig(sensorname, params, **kwargs):
+def addSensorConfig(sensorname, sensortype, **kwargs):
     """Create sensor YAML configuration file"""
 
     # Sensor configuration filename
-    sensoruserpath = getSensorBinPath(sensorname)
-    conffilename = '%(sensoruserpath)s/conf.yml' % locals()
+    etc = CONFDIR
+    mksprogram = MKSPROGRAM
+    templatedir = '%(mksprogram)s/templates/sensor' % locals()
+    subpath = sensortype.replace('.', '/')
 
-    # Merge configuration
-    conf = {}
-    if os.path.isfile(conffilename):
-        with open(conffilename, 'r') as stream:
-            conf = yaml.load(stream)
+    srcconf = '%(templatedir)s/%(subpath)s/configuration.sample.yml' % locals()
+    dstconf = '%(etc)s/sensor_%(sensorname)s.yml' % locals()
+    disabledconf = '%(etc)s/sensor_%(sensorname)s.yml.disabled' % locals()
 
-    for key in params.keys():
-        conf[key] = params[key]
+    # If configuration is disabled, just enable it
+    if os.path.isfile(disabledconf):
+        if os.path.isfile(dstconf):
+            raise Exception("'%(dstconf)s' allready exist, cannot activate the '%(sensortype)s'\n"
+                            "Please remove '%(disabledconf)s' or '%(dstconf)s'" % locals())
 
-    # Save to YAML format
-    saveto(conffilename, yaml.dump(conf, default_flow_style=False))
+        move(disabledconf, dstconf)
+    else:
+        copyfile(srcconf, dstconf)
+
+    print "%(sensorname)s sensor configuration in '%(dstconf)s'" % locals()
 
 
 def enableSenderConfig(sendername, **kwargs):
@@ -216,7 +223,8 @@ def enableSenderConfig(sendername, **kwargs):
 
         move(disabledconf, dstconf)
     else:
-        copyfile(srcconf, dstconf)
+        if not os.path.isfile(dstconf):
+            copyfile(srcconf, dstconf)
 
     print "%(sendername)s sender configuration in '%(dstconf)s'" % locals()
 
@@ -244,48 +252,68 @@ def disableSenderConfig(sendername, **kwargs):
     print "%(sendername)s sender is now disabled" % locals()
 
 
-def loadSenderConfig(sendername=None):
-    conf = CONFDIR
-    conffilename = '%(conf)s/sender.yml' % locals()
+def getEnabledSenderNames(sendername=None):
+    sendernames = []
+
+    enabledsenders = glob.glob(os.path.join(CONFDIR, "sender_*.yml"))
+    for enabledsender in enabledsenders:
+        #filename = os.path.splitext(os.pathsep(os.path.basename(enabledsender)))
+        filename = os.path.basename(os.path.splitext(enabledsender)[0])
+        sendername = filename.replace('sender_', '')
+        sendernames.append(sendername)
+
+    return sendernames
+
+def getEnabledSenderObjects(sensorname, datasources):
+    sendernames = getEnabledSenderNames()
+
+    senders = []
+    for key in sendernames:
+        modulename = 'mksensors.lib.sender.%s' % key
+        mod = loadModule(modulename)
+        senderobj = mod.Sender()
+        senderobj.initSender(sensorname, datasources)
+        senders.append(senderobj)
+
+    return senders
+
+
+def loadSenderConfig(sendername):
+    confdir = CONFDIR
+    conffilename = '%(confdir)s/sender_%(sendername)s.yml' % locals()
+
+    config = {}
+    if os.path.isfile(conffilename):
+        with open(conffilename, 'r') as stream:
+            config = yaml.load(stream)
+
+    return config
+
+
+def sendValues(senders, sensorname, values):
+
+    for sender in senders:
+        try:
+            sender.sendValues(sensorname, values)
+        except Exception as e:
+            # Todo: log in mksensors.log
+            exc_type, exc_value, exc_traceback = sys.exc_info()
+            print repr(traceback.print_exception(exc_type, exc_value, exc_traceback,
+                              limit=2, file=sys.stdout))
+pass
+
+
+def loadSensorConfig(sensorname):
+    """Load sensor YAML file"""
+
+    etc = CONFDIR
+    conffilename = '%(etc)s/sensor_%(sensorname)s.yml' % locals()
+
 
     conf = {}
     if os.path.isfile(conffilename):
         with open(conffilename, 'r') as stream:
             conf = yaml.load(stream)
-
-    if sendername is None:
-        return conf
-    else:
-        return conf.get(sendername, {})
-
-def loadSenderObject(sensorname, datasources):
-    senderconfig = loadSenderConfig()
-    senders = []
-    for key in senderconfig:
-        modulename = 'mksensors.lib.%s' % key
-        mod = loadModule(modulename)
-        obj = mod.Sender(sensorname, datasources, senderconfig)
-        obj.initSender()
-        senders.append(obj)
-
-    return senders
-
-def sendValues(senders, sensorname, values):
-
-    for sender in senders:
-        sender.sendValues(sensorname, values)
-
-
-def loadSensorConfig():
-    """Load sensor YAML file"""
-
-    thisscript = os.path.abspath(sys.argv[0])
-    sensorfolder = os.path.dirname(thisscript)
-    conffilename = "%(sensorfolder)s/conf.yml" % locals()
-
-    conf = {}
-    with open(conffilename, 'r') as stream:
-        conf = yaml.load(stream)
 
     # Set default parameter
     conf['pause'] = conf.get('pause', 15)

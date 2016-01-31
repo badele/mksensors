@@ -1,0 +1,28 @@
+Changelog
+=========
+
+Version 0.2 (2014-01-31)
+--------------------------
+
+ * Add enable & disable sender feature
+ * Add ping sensors
+ * Add isup sensors
+ * Create scripts/setup.sh installation
+ * Setup script use virtualenv and install in /opt/mksensors
+ * Setup script installation support
+    * Archlinux
+    * Debian/Ubuntu
+    * Fedora
+ * In default datas stored in /var/lib/mksensors
+ * Check sender installation requirements
+ * Add sender plugins
+    * rrd
+    * mqtt
+    * file
+    * log
+
+
+Version 0.0.1 (2016-01-10)
+--------------------------
+
+* First version

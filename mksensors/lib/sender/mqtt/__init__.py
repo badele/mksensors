@@ -11,50 +11,31 @@ __description__ = """Tool for easily create sensors daemons"""
 __license__ = 'GPL'
 __version__ = '0.0.1'
 
-import os
-import sys
-
-from distutils.spawn import find_executable
 
 from mksensors.lib import mks
+from mksensors.lib.mks.plugins import SenderPlugin
 
 DAY = 86400
 WEEK = DAY * 7
 MONTH = DAY * 31
 YEAR = DAY * 365
 
-def checkRequirements():
-    # Check
-    packages = ['paho-mqtt==1.1']
-    mks.checkOrInstallPackages(packages)
 
-
-
-class Sender(object):
-    def __init__(self, sensorname, datasources, conf):
+class Sender(SenderPlugin):
+    def __init__(self):
         self.mymqtt = __import__('paho.mqtt.client')
+        self.sendertype = 'mqtt'
+        self.config = mks.loadSenderConfig(self.sendertype)
+        self.mqttc = None
 
-        self.sensorname = sensorname
-        self.datasources = datasources
-        self.conf = conf.get('sender.mqtt', {})
-        self.mqtt = None
-
-    def initSender(self):
-
-        if 'broker' not in self.conf:
-            raise Exception("Broker is not define")
-
-        if 'topic' not in self.conf:
-            raise Exception("Topic is not define")
-
+    def initSender(self, sensorname, datasources):
         self.mqttc = self.mymqtt.mqtt.client.Client()
-        self.mqttc.connect(self.conf['broker'])
+        self.mqttc.connect(self.config['broker'])
         self.mqttc.loop_start()
-
 
     def sendValues(self, sensorname, items):
 
-        topic = self.conf['topic']
+        topic = self.config['topic']
         for item in items:
             (datasource, value, ts) = item
 
@@ -63,3 +44,8 @@ class Sender(object):
                 fulltopicname = "%(topic)s/%(sensorname)s%(dsname)s" % locals()
                 print fulltopicname
                 self.mqttc.publish(fulltopicname, value)
+
+    def checkRequirements(self):
+        # Check
+        packages = ['paho-mqtt==1.1']
+        mks.checkOrInstallPackages(packages)

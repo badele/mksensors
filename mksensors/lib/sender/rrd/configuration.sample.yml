@@ -1,1 +1,6 @@
-location: '/tmp/mksensors/rrd' # Folder location for storing the sensors values in the rdd database
+location: '<SAMPLE>/var/lib/mksensors/datas/rrd</SAMPLE>' # Folder location for storing the sensors values
+step: 15
+dayres: 60
+weekres: 300
+monthres: 900
+

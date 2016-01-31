@@ -35,7 +35,7 @@ if __name__ == '__main__':
         dsnames = (hostname, 'isup')
         datasources.append(dsnames)
 
-    senders = mks.loadSenderObject(sensorname, datasources)
+    senders = mks.getEnabledSenderObjects(sensorname, datasources)
 
     while True:
         # Ping for all hostnames
