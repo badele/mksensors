@@ -5,7 +5,7 @@
 Usage:
   mksensors enable sender SENDERTYPE [-d | --debug]
   mksensors disable sender SENDERTYPE [-d | --debug]
-  mksensors add sensor SENSORNAME SENSORLIBRARYNAME [-d | --debug] [--force]
+  mksensors enable sensor SENSORNAME SENSORLIBRARYNAME [-d | --debug] [--force]
   mksensors disable sensor SENSORNAME [-d | --debug]
   mksensors remove sensor SENSORNAME [-d | --debug]
   mksensors list sensors [-d | --debug]
@@ -50,9 +50,9 @@ def rootRequire():
         sys.exit('This command must be run as root')
 
 
-def addSensor(sensorname, sensorlibraryname, **kwargs):
+def enableSensor(sensorname, sensorlibraryname, **kwargs):
     """
-    Add new sensor configuration
+    Enable new sensor configuration
      - Create supervisor configuration
      - Create sensor user script from template
      - Create YAML configuration from sensor template
@@ -61,31 +61,35 @@ def addSensor(sensorname, sensorlibraryname, **kwargs):
     # Check packages installation
     modulename = 'mksensors.templates.sensor.%s' % sensorlibraryname
     mod = mks.loadModule(modulename)
-    mod.checkRequirements()
+    sensorobj = mod.Sensor()
+    sensorobj.checkRequirements()
 
     # Create Supervisor configuration
-    mks.addSupervisorConf(
-        sensorname=sensorname,
-        sensorlibraryname=sensorlibraryname,
-        #params=params,
-        **kwargs
-    )
+    mks.enableSupervisorConf(sensorname=sensorname, sensorlibraryname=sensorlibraryname)
 
     # Copy module sensor code to bin folder
-    mks.copySensorTemplateToUserBin(
-        sensorname=sensorname,
-        sensorlibraryname=sensorlibraryname,
-        #params=params,
-        **kwargs
-    )
+    mks.copySensorTemplateToUserBin(sensorname=sensorname, sensorlibraryname=sensorlibraryname)
 
     # Create sensor user configuration
-    mks.addSensorConfig(
-        sensorname=sensorname,
-        sensortype=sensorlibraryname,
-        #params=params,
-        **kwargs
-    )
+    mks.enableSensorConfig(sensorname=sensorname, sensortype=sensorlibraryname)
+
+
+def disableSensor(sensorname, **kwargs):
+    """
+    Enable new sensor configuration
+     - Disable supervisor configuration
+     - Disable sensor user script from template
+     - Disable YAML configuration from sensor template
+     """
+
+    # Create Supervisor configuration
+    mks.disableSupervisorConf(sensorname)
+
+    # Copy module sensor code to bin folder
+    mks.disableSensorTemplateToUserBin(sensorname)
+
+    # Create sensor user configuration
+    mks.disableSensorConfig(sensorname)
 
 
 def removeSensor(sensorname):
@@ -97,6 +101,7 @@ def removeSensor(sensorname):
     """
     mks.removeSupervisorConf(sensorname=sensorname)
     mks.removeSensorUser(sensorname)
+    mks.disableSensorConfig(sensorname)
 
 
 def ListSensors():
@@ -138,6 +143,7 @@ def disableSender(sendertype, **kwargs):
     )
 
 
+
 def checkMkSensors():
     sendernames = mks.getEnabledSenderNames()
     for sendername in sendernames:
@@ -159,14 +165,32 @@ def main():
         sys.tracebacklimit = 0
 
     ###############################
-    # Sensor
+    # Enable / Disable
     ###############################
-    if argopts['add']:
+    if argopts['enable']:
+        if argopts['sender']:
+            enableSender(
+                sendername=argopts['SENDERTYPE'],
+                **argopts
+            )
+
         if argopts['sensor']:
-            addSensor(
+            enableSensor(
                 sensorname=argopts['SENSORNAME'],
                 sensorlibraryname=argopts['SENSORLIBRARYNAME'],
-                #params=mks.convertStrintToDict(argopts['--param']),
+                **argopts
+            )
+
+    if argopts['disable']:
+        if argopts['sender']:
+            disableSender(
+                sendertype=argopts['SENDERTYPE'],
+                **argopts
+            )
+
+        if argopts['sensor']:
+            disableSensor(
+                sensorname=argopts['SENSORNAME'],
                 **argopts
             )
 
@@ -178,24 +202,6 @@ def main():
         if argopts['sensors']:
             ListSensors()
 
-    ###############################
-    # Enable / Disable
-    ###############################
-    if argopts['enable']:
-        if argopts['sender']:
-            enableSender(
-                sendername=argopts['SENDERTYPE'],
-                #params=mks.convertStrintToDict(argopts['--param']),
-                **argopts
-            )
-
-    if argopts['disable']:
-        if argopts['sender']:
-            disableSender(
-                sendertype=argopts['SENDERTYPE'],
-                #params=mks.convertStrintToDict(argopts['--param']),
-                **argopts
-            )
 
 
 if __name__ == '__main__':

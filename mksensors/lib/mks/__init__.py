@@ -120,16 +120,25 @@ def getSensorLogPath(sensorname):
     return sensorlogpath
 
 
-def addSupervisorConf(sensorname, sensorlibraryname, **kwargs):
-    """Create supervisor conf for sensor"""
+def enableSupervisorConf(sensorname, sensorlibraryname, **kwargs):
+    """Create supervisor sensor conf"""
 
     # Add parameters
+    logdir = LOGDIR
+    supervisordir = SUPERVISORDIR
     pythonexec = sys.executable
     sensorcmd = getSensorBinPath(sensorname) + '/__init__.py'
-    logdir = LOGDIR
+    conffilename = "%(supervisordir)s/mks_%(sensorname)s.conf" % locals()
+    disabledconf = '%(conffilename)s.disabled' % locals()
 
-    # Prepare supervisor.conf
-    sconf = """[program:%(sensorname)s]
+    if os.path.isfile(conffilename):
+        return
+
+    if os.path.isfile(disabledconf):
+        move(disabledconf, conffilename)
+    else:
+        # Prepare supervisor.conf
+        content = """[program:%(sensorname)s]
 command=%(pythonexec)s %(sensorcmd)s
 autostart=true
 autorestart=true
@@ -137,10 +146,29 @@ redirect_stderr=true
 stdout_logfile=%(logdir)s/sensor_%(sensorname)s.log
 startsecs=5""" % locals()
 
-    # Write configuration
+        # Write configuration
+        saveto(conffilename, content)
+
+
+def disableSupervisorConf(sensorname):
+    """Disable supervisor sensor conf"""
+
+    # Vars
     supervisordir = SUPERVISORDIR
-    filename = "%(supervisordir)s/mks_%(sensorname)s.conf" % locals()
-    saveto(filename, sconf)
+    srcconf = "%(supervisordir)s/mks_%(sensorname)s.conf" % locals()
+    disabledconf = "%(supervisordir)s/mks_%(sensorname)s.conf.disabled" % locals()
+
+    # Check if supervisor configuration exists
+    if not os.path.isfile(srcconf):
+        return
+
+    # If file allready disable, can disable again
+    if os.path.isfile(disabledconf):
+        raise Exception("'%(disabledconf)s' allready exist, cannot disable the '%(sensorname)s' sensor\n"
+                        "Please remove '%(disabledconf)s' or '%(srcconf)s'" % locals())
+
+    # Disable the supervisor configuration
+    move(srcconf, disabledconf)
 
 
 def removeSupervisorConf(sensorname):
@@ -148,36 +176,66 @@ def removeSupervisorConf(sensorname):
 
     supervisordir = SUPERVISORDIR
     filename = "%(supervisordir)s/mks_%(sensorname)s.conf" % locals()
-    if os.path.exists(filename):
-        print "Delete %s" % filename
-        os.remove(filename)
 
+    if not os.path.exists(filename):
+        return
+
+    os.remove(filename)
+    disableSupervisorConf(sensorname)
 
 def removeSensorUser(sensorname):
     """Remove the sensor user script"""
 
     sensoruserpath = getSensorBinPath(sensorname)
     checkfilename = '%(sensoruserpath)s/__init__.py' % locals()
-    if os.path.exists(checkfilename):
-        print "Delete %s" % sensoruserpath
-        rmtree(sensoruserpath)
+
+    # Check if main sensor user file exists
+    if not os.path.exists(checkfilename):
+        return
+
+    # Delete sensor user folder
+    rmtree(sensoruserpath)
 
 
-def copySensorTemplateToUserBin(sensorname, sensorlibraryname, **kwargs):
+def copySensorTemplateToUserBin(sensorname, sensorlibraryname):
     """Copy sensor template to user script folder"""
 
     sensorlibrarypath = getSensorTemplatePath(sensorlibraryname)
     sensoruserpath = getSensorBinPath(sensorname)
+    disableduserpath ='%(sensoruserpath)s.disabled' % locals()
 
-    if os.path.isdir(sensoruserpath) and kwargs['--force'] is False:
-        print '%(sensorname)s sensor allready exist in %(sensoruserpath)s' % locals()
+    # Check if sensor user path allready exists
+    if os.path.isdir(sensoruserpath):
+        return
+
+    print disableduserpath
+    if os.path.isdir(disableduserpath):
+        move(disableduserpath, sensoruserpath)
     else:
-        if os.path.isdir(sensoruserpath):
-            rmtree(sensoruserpath)
         copytree(sensorlibrarypath, sensoruserpath)
 
 
-def addSensorConfig(sensorname, sensortype, **kwargs):
+def disableSensorTemplateToUserBin(sensorname, **kwargs):
+    """Copy sensor template to user script folder"""
+
+    # Sensor configuration filename
+    srcuserpath = getSensorBinPath(sensorname)
+    disablesensoruserpath = '%(srcuserpath)s.disabled' % locals()
+
+    # Check if sensor user folder exists
+    if not os.path.isdir(srcuserpath):
+        return
+
+    # If file allready disable, can disable again
+    if os.path.isdir(disablesensoruserpath):
+        raise Exception("'%(disablesensoruserpath)s' allready exist, cannot disable the '%(sensorname)s' sensor\n"
+                        "Please remove '%(srcuserpath)s' or '%(disablesensoruserpath)s'" % locals())
+
+    # Disable the user folder
+    move(srcuserpath, disablesensoruserpath)
+
+
+def enableSensorConfig(sensorname, sensortype, **kwargs):
     """Create sensor YAML configuration file"""
 
     # Sensor configuration filename
@@ -193,14 +251,36 @@ def addSensorConfig(sensorname, sensortype, **kwargs):
     # If configuration is disabled, just enable it
     if os.path.isfile(disabledconf):
         if os.path.isfile(dstconf):
-            raise Exception("'%(dstconf)s' allready exist, cannot activate the '%(sensortype)s'\n"
+            raise Exception("'%(dstconf)s' allready exist, cannot activate the '%(sensorname)s' sensor\n"
                             "Please remove '%(disabledconf)s' or '%(dstconf)s'" % locals())
 
         move(disabledconf, dstconf)
     else:
-        copyfile(srcconf, dstconf)
+        if not os.path.isfile(dstconf):
+            copyfile(srcconf, dstconf)
 
     print "%(sensorname)s sensor configuration in '%(dstconf)s'" % locals()
+
+
+def disableSensorConfig(sensorname):
+    """Disable sensor YAML configuration file"""
+
+    # Sensor configuration filename
+    etc = CONFDIR
+    srcconf = '%(etc)s/sensor_%(sensorname)s.yml' % locals()
+    disabledconf = '%(etc)s/sensor_%(sensorname)s.yml.disabled' % locals()
+
+    # Check if sensor configuration exists
+    if not os.path.isfile(srcconf):
+        return
+
+    # If file allready disabled, can disable again
+    if os.path.isfile(disabledconf):
+        raise Exception("'%(disabledconf)s' allready exist, cannot disable the '%(sensorname)s' sensor\n"
+                        "Please remove '%(disabledconf)s' or '%(srcconf)s'" % locals())
+
+    # Disabled configuration
+    move(srcconf, disabledconf)
 
 
 def enableSenderConfig(sendername, **kwargs):
@@ -218,7 +298,7 @@ def enableSenderConfig(sendername, **kwargs):
     # If configuration is disabled, just enable it
     if os.path.isfile(disabledconf):
         if os.path.isfile(dstconf):
-            raise Exception("'%(dstconf)s' allready exist, cannot activate the '%(sendertype)s'\n"
+            raise Exception("'%(dstconf)s' allready exist, cannot activate the '%(sendername)s' sender\n"
                             "Please remove '%(disabledconf)s' or '%(dstconf)s'" % locals())
 
         move(disabledconf, dstconf)
@@ -237,17 +317,21 @@ def disableSenderConfig(sendername, **kwargs):
     mksprogram = MKSPROGRAM
     libdir = '%(mksprogram)s/lib' % locals()
 
-    srcconf = '%(libdir)s/sender/%(sendername)s/configuration.sample.yml' % locals()
     dstconf = '%(etc)s/sender_%(sendername)s.yml' % locals()
     disabledconf = '%(etc)s/sender_%(sendername)s.yml.disabled' % locals()
 
-    # If configuration is enabled, just disable it
-    if os.path.isfile(dstconf):
-        if os.path.isfile(disabledconf):
-            raise Exception("'%(disabledconf)s' allready exist, cannot activate the '%(sendertype)s'\n"
-                            "Please remove '%(dstconf)s' or '%(disabledconf)s'" % locals())
+    # Check if sender configuration exist
+    if not os.path.isfile(dstconf):
+        return
 
-        move(dstconf, disabledconf)
+
+    # If file allready disabled, can disable again
+    if os.path.isfile(disabledconf):
+        raise Exception("'%(disabledconf)s' allready exist, cannot activate the '%(sendername)s' sender\n"
+                        "Please remove '%(dstconf)s' or '%(disabledconf)s'" % locals())
+
+    # Disable configuration
+    move(dstconf, disabledconf)
 
     print "%(sendername)s sender is now disabled" % locals()
 
@@ -290,6 +374,18 @@ def loadSenderConfig(sendername):
     return config
 
 
+def loadSensorConfig(sensorname):
+    confdir = CONFDIR
+    conffilename = '%(confdir)s/sensor_%(sensorname)s.yml' % locals()
+
+    config = {}
+    if os.path.isfile(conffilename):
+        with open(conffilename, 'r') as stream:
+            config = yaml.load(stream)
+
+    return config
+
+
 def sendValues(senders, sensorname, values):
 
     for sender in senders:
@@ -303,22 +399,22 @@ def sendValues(senders, sensorname, values):
 pass
 
 
-def loadSensorConfig(sensorname):
-    """Load sensor YAML file"""
-
-    etc = CONFDIR
-    conffilename = '%(etc)s/sensor_%(sensorname)s.yml' % locals()
-
-
-    conf = {}
-    if os.path.isfile(conffilename):
-        with open(conffilename, 'r') as stream:
-            conf = yaml.load(stream)
-
-    # Set default parameter
-    conf['pause'] = conf.get('pause', 15)
-
-    return conf
+# def loadSensorConfig(sensorname):
+#     """Load sensor YAML file"""
+#
+#     etc = CONFDIR
+#     conffilename = '%(etc)s/sensor_%(sensorname)s.yml' % locals()
+#
+#
+#     conf = {}
+#     if os.path.isfile(conffilename):
+#         with open(conffilename, 'r') as stream:
+#             conf = yaml.load(stream)
+#
+#     # Set default parameter
+#     conf['pause'] = conf.get('pause', 15)
+#
+#     return conf
 
 def getSensorName():
     """Return the sensor name from user folder"""
@@ -331,6 +427,12 @@ def getSensorName():
 def saveto(filename, content):
     """Save content to file"""
 
+    # Create directory if not exists
+    dirname = os.path.dirname(filename)
+    if not os.path.isdir(dirname):
+        os.makedirs(dirname)
+
+    # Write content
     out = open(filename, 'wb')
     out.write(content)
     out.close()

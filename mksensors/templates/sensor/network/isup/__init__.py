@@ -15,11 +15,36 @@ import time
 from copy import deepcopy
 
 from mksensors.lib import mks
+from mksensors.lib.mks.plugins import SensorPlugin
 from mksensors.lib.sensor.network import ping
 
 
-def checkRequirements():
-    ping.checkRequirements()
+class Sensor(SensorPlugin):
+    def __init__(self):
+        """Init Sensor class"""
+        super(Sensor, self).__init__()
+        self.sensortype = 'network.isup'
+
+        self.sensorname = mks.getSensorName()
+        self.config = mks.loadSensorConfig(self.sensorname)
+
+
+    def initSensor(self):
+        """Init the Sensor object parameters"""
+        super(Sensor, self).initSensor()
+
+
+    def sendValues(self, sensorname, items):
+        """Send value to the sender storage"""
+        for item in items:
+            (datasource, value, ts) = item
+            dsname = mks.datasource2String(datasource, '.')
+            content = "%(ts)s %(sensorname)s%(dsname)s %(value)s\n" % locals()
+            self._file.write(content)
+        self._file.flush()
+
+    def checkRequirements(self):
+        ping.checkRequirements()
 
 
 if __name__ == '__main__':

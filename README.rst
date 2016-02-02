@@ -26,8 +26,8 @@ All command must run with **root** account
    sudo mksensors enable sender log
 
    # Add sensors
-   sudo mksensors sensor new testping sensor.network.ping --param="'hostnames': ['8.8.8.8', '8.8.4.4']"
-   sudo mksensors sensor new isup sensor.network.isup --param="'hostnames': ['host1.int.dns', '192.168.1.2']"
+   sudo mksensors enable sensor testping network.ping
+   sudo mksensors enable sensor isup network.isup
 
    # Restart mksensors services
    sudo systemctl restart mksensors
