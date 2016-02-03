@@ -64,6 +64,20 @@ def checkOrInstallPackages(packages):
         if not checkPackageInstalled(package):
             pip.main(['install', package])
 
+def checkMkSensors():
+    sendernames = getEnabledSenderNames()
+    allerrors = {}
+    for sendername in sendernames:
+        modulename = 'mksensors.lib.sender.%s' % sendername
+        mod = loadModule(modulename)
+        senderobj = mod.Sender()
+        sendererrors = senderobj.checkConfiguration()
+        if sendererrors:
+            allerrors[sendername] = sendererrors
+
+    return allerrors
+
+
 def loadModule(modulename):
     """Load Dynamicaly python module"""
 
@@ -208,7 +222,6 @@ def copySensorTemplateToUserBin(sensorname, sensorlibraryname):
     if os.path.isdir(sensoruserpath):
         return
 
-    print disableduserpath
     if os.path.isdir(disableduserpath):
         move(disableduserpath, sensoruserpath)
     else:
@@ -352,12 +365,15 @@ def getEnabledSenderObjects(sensorname, datasources):
     sendernames = getEnabledSenderNames()
 
     senders = []
-    for key in sendernames:
-        modulename = 'mksensors.lib.sender.%s' % key
+    for sendername in sendernames:
+        modulename = 'mksensors.lib.sender.%s' % sendername
         mod = loadModule(modulename)
-        senderobj = mod.Sender()
-        senderobj.initSender(sensorname, datasources)
-        senders.append(senderobj)
+        try:
+            senderobj = mod.Sender()
+            senderobj.initSender(sensorname, datasources)
+            senders.append(senderobj)
+        except Exception as e:
+            print e.message
 
     return senders
 
@@ -386,35 +402,6 @@ def loadSensorConfig(sensorname):
     return config
 
 
-def sendValues(senders, sensorname, values):
-
-    for sender in senders:
-        try:
-            sender.sendValues(sensorname, values)
-        except Exception as e:
-            # Todo: log in mksensors.log
-            exc_type, exc_value, exc_traceback = sys.exc_info()
-            print repr(traceback.print_exception(exc_type, exc_value, exc_traceback,
-                              limit=2, file=sys.stdout))
-pass
-
-
-# def loadSensorConfig(sensorname):
-#     """Load sensor YAML file"""
-#
-#     etc = CONFDIR
-#     conffilename = '%(etc)s/sensor_%(sensorname)s.yml' % locals()
-#
-#
-#     conf = {}
-#     if os.path.isfile(conffilename):
-#         with open(conffilename, 'r') as stream:
-#             conf = yaml.load(stream)
-#
-#     # Set default parameter
-#     conf['pause'] = conf.get('pause', 15)
-#
-#     return conf
 
 def getSensorName():
     """Return the sensor name from user folder"""

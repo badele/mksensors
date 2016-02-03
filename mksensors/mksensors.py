@@ -9,6 +9,7 @@ Usage:
   mksensors disable sensor SENSORNAME [-d | --debug]
   mksensors remove sensor SENSORNAME [-d | --debug]
   mksensors list sensors [-d | --debug]
+  mksensors check
   mksensors -d | --debug
   mksensors -h | --help
 
@@ -103,6 +104,18 @@ def removeSensor(sensorname):
     mks.removeSensorUser(sensorname)
     mks.disableSensorConfig(sensorname)
 
+def checkMkSensors():
+    allerrors = mks.checkMkSensors()
+
+    if not allerrors:
+        print "You mksensors is correctly configured"
+        return
+
+    print "** FOUND ERRORS **"
+    for sendername in allerrors.keys():
+        print "%(sendername)s:" % locals()
+        for error in allerrors[sendername]:
+            print "  - %(error)s" % locals()
 
 def ListSensors():
     supervisorfiles = glob.glob(os.path.join(mks.SUPERVISORDIR, "mks_*"))
@@ -132,7 +145,7 @@ def enableSender(sendername, **kwargs):
     )
 
     # Check mksensors configuration
-    checkMkSensors()
+    mks.checkMkSensors()
 
 def disableSender(sendertype, **kwargs):
     # Create sensor user configuration
@@ -141,16 +154,6 @@ def disableSender(sendertype, **kwargs):
         #params=params,
         **kwargs
     )
-
-
-
-def checkMkSensors():
-    sendernames = mks.getEnabledSenderNames()
-    for sendername in sendernames:
-        modulename = 'mksensors.lib.sender.%s' % sendername
-        mod = mks.loadModule(modulename)
-        senderobj = mod.Sender()
-        senderobj.checkConfiguration()
 
 
 
@@ -202,6 +205,8 @@ def main():
         if argopts['sensors']:
             ListSensors()
 
+    if argopts['check']:
+        checkMkSensors()
 
 
 if __name__ == '__main__':
