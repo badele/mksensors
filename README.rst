@@ -30,6 +30,7 @@ All command must run with **root** account
    sudo mksensors enable sensor isup network.isup
 
    # Restart mksensors services
+   sudo mksensors check
    sudo systemctl restart mksensors
 
    # Show running sensors

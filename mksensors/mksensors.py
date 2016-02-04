@@ -113,7 +113,7 @@ def checkMkSensors():
 
     print "** FOUND ERRORS **"
     for sendername in allerrors.keys():
-        print "%(sendername)s:" % locals()
+        print "* %(sendername)s:" % locals()
         for error in allerrors[sendername]:
             print "  - %(error)s" % locals()
 

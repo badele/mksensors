@@ -89,6 +89,7 @@ check_mksensors_configuration(){
         cat << EOF > "$filename"
 [unix_http_server]
 file=/tmp/supervisor_mksensors.sock
+
 [supervisord]
 logfile=/tmp/supervisord_mksensors.log
 logfile_maxbytes=50MB
@@ -98,10 +99,13 @@ pidfile=/tmp/supervisord_mksensors.pid
 nodaemon=false
 minfds=1024
 minprocs=200
+
 [rpcinterface:supervisor]
 supervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface
+
 [supervisorctl]
 serverurl=unix:///tmp/supervisor_mksensors.sock
+
 [include]
 files = $MKSDATA/etc/supervisord.d/*.conf
 EOF
