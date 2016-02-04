@@ -72,7 +72,6 @@ class Sensor(SensorPlugin):
                 value = result['result']
                 values.append((datasource, value, mks.getTimestamp()))
 
-                #mks.sendValues(self.senders, self.sensorname, values)
                 self.sendValues(values)
 
             # Sleep

@@ -16,52 +16,84 @@ import time
 from copy import deepcopy
 
 from mksensors.lib import mks
+from mksensors.lib.mks.plugins import SensorPlugin
 from mksensors.lib.sensor.network import ping
 
 
-def checkRequirements():
-    ping.checkRequirements()
+class Sensor(SensorPlugin):
+    def getSensortype(self):
+        return 'network.isup'
+
+    def getDescription(self):
+        return 'Return if the hosts are online'
+
+    def checkRequirements(self):
+        ping.checkRequirements()
+
+    def __init__(self):
+        """Init Sensor class"""
+        super(Sensor, self).__init__()
+        self.hostnames = []
 
 
-if __name__ == '__main__':
-    sensorname = mks.getSensorName()
-    config = mks.loadSensorConfig(sensorname)
+    def initSensor(self):
+        """Init the Sensor object parameters"""
+        super(Sensor, self).initSensor()
 
-    # Set default parameters
-    hostnames = config.get('hostnames', [])
-    filtered_ds = config.get(
-        'datasources', [
-            'max_rtt', 'min_rtt', 'avg_rtt', 'packet_lost',
-            'packet_size', 'timeout', 'result',
-        ]
-    )
+        # Get hostnames list
+        hostnames = self.config.get('hostnames', [])
 
-    # Set datasource list
-    datasources = []
-    for hostname in hostnames:
-        for filtered in filtered_ds:
-            dsnames = (hostname, filtered)
+        # Set datasource list
+        datasources = []
+        for hostname in hostnames:
+            dsnames = (hostname, 'isup')
             datasources.append(dsnames)
 
-    senders = mks.getEnabledSenderObjects(sensorname, datasources)
+        self.senders = mks.getEnabledSenderObjects(self.sensorname, datasources)
 
-    while True:
-        # Ping for all hostnames
+
+    def startSensor(self):
+
+        # Set default parameters
+        hostnames = self.config.get('hostnames', [])
+        filtered_ds = self.config.get(
+            'datasources', [
+                'max_rtt', 'min_rtt', 'avg_rtt', 'packet_lost',
+                'packet_size', 'timeout', 'result',
+            ]
+        )
+
+        # Set datasource list
+        datasources = []
         for hostname in hostnames:
-            # Test connexion
-            rping = ping.ping(destination=hostname, **config)
-            rping.run()
-            result = deepcopy(rping.results)
-            result['sensorname'] = sensorname
-            result['hostname'] = hostname.replace('.', '_')
-
-            # return value
-            values = []
             for filtered in filtered_ds:
-                datasource = (hostname, filtered)
-                value = result[filtered]
-                values.append((datasource, value, mks.getTimestamp()))
+                dsnames = (hostname, filtered)
+                datasources.append(dsnames)
 
-            mks.sendValues(senders, sensorname, values)
-        # Sleep
-        time.sleep(config['pause'])
+        while True:
+            # Ping for all hostnames
+            for hostname in hostnames:
+                # Test connexion
+                rping = ping.ping(destination=hostname)
+                rping.run()
+                result = deepcopy(rping.results)
+                result['sensorname'] = self.sensorname
+                result['hostname'] = hostname.replace('.', '_')
+
+                # return value
+                values = []
+                for filtered in filtered_ds:
+                    datasource = (hostname, filtered)
+                    value = result[filtered]
+                    values.append((datasource, value, mks.getTimestamp()))
+
+                self.sendValues(values)
+
+            # Sleep
+            self.flushMessages()
+            time.sleep(self.config.get('pause', 15))
+
+if __name__ == '__main__':
+    sensor = Sensor()
+    sensor.initSensor()
+    sensor.startSensor()

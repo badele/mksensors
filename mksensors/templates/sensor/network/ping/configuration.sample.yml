@@ -1,0 +1,11 @@
+hostnames:
+  - 8.8.8.8
+  - 8.8.4.4
+datasources:
+  - max_rtt
+  - min_rtt
+  - avg_rtt
+  - packet_lost
+  - packet_size
+  - timeout
+  - result
