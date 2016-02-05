@@ -9,6 +9,7 @@ Usage:
   mksensors disable sensor SENSORNAME [-d | --debug]
   mksensors remove sensor SENSORNAME [-d | --debug]
   mksensors list sensors [-d | --debug]
+  mksensors list senders [-d | --debug]
   mksensors check
   mksensors -d | --debug
   mksensors -h | --help
@@ -41,7 +42,7 @@ import stat
 from distutils.spawn import find_executable
 
 from docopt import docopt
-
+from tabulate import tabulate
 
 from lib import mks
 
@@ -117,7 +118,7 @@ def checkMkSensors():
         for error in allerrors[sendername]:
             print "  - %(error)s" % locals()
 
-def ListSensors():
+def showSensorsList():
     supervisorfiles = glob.glob(os.path.join(mks.SUPERVISORDIR, "mks_*"))
 
     for filename in supervisorfiles:
@@ -126,6 +127,30 @@ def ListSensors():
         # if m:
         #     sensorfilename = m.group(1)
         #     sensormod = mks.loadModule(sensorfilename)
+
+def showSendersList():
+    allsenders = mks.getSenderPluginsList()
+    enabledsenders = mks.getEnabledSenderNames()
+
+    senders = []
+    for sendername in allsenders:
+        # Get senders information
+        description = ""
+        enabled = ''
+        try:
+            modulename = 'mksensors.lib.sender.%s' % sendername
+            mod = mks.loadModule(modulename)
+            senderobj = mod.Sender()
+            description = senderobj.getDescription()
+            enabled = 'Yes' if sendername in enabledsenders else ''
+        except Exception as e:
+            description = 'Cannot load the sender'
+
+        senders.append((sendername, description, enabled))
+
+    header = ['Sender name', 'Description', 'Enabled']
+    print tabulate(senders, headers=header, tablefmt="orgtbl")
+
 
 
 def enableSender(sendername, **kwargs):
@@ -201,13 +226,15 @@ def main():
         if argopts['sensor']:
             removeSensor(sensorname=argopts['SENSORNAME'])
 
-    if argopts['list']:
-        if argopts['sensors']:
-            ListSensors()
-
     if argopts['check']:
         checkMkSensors()
 
+    if argopts['list']:
+        if argopts['senders']:
+            showSendersList()
+
+        if argopts['sensors']:
+            showSensorsList()
 
 if __name__ == '__main__':
     main()

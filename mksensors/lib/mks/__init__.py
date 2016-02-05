@@ -84,7 +84,7 @@ def loadModule(modulename):
     # Try to load the sensor module
     try:
         mod = __import__(modulename, fromlist=[modulename])
-    except ImportError:
+    except ImportError as e:
         raise Exception("Can't Load module %s" % modulename)
 
     return mod
@@ -349,17 +349,29 @@ def disableSenderConfig(sendername, **kwargs):
     print "%(sendername)s sender is now disabled" % locals()
 
 
-def getEnabledSenderNames(sendername=None):
-    sendernames = []
+def getSenderPluginsList():
+    senderfolder = '%(MKSPROGRAM)s/lib/sender' % globals()
+    files = os.listdir(senderfolder)
 
-    enabledsenders = glob.glob(os.path.join(CONFDIR, "sender_*.yml"))
-    for enabledsender in enabledsenders:
-        #filename = os.path.splitext(os.pathsep(os.path.basename(enabledsender)))
-        filename = os.path.basename(os.path.splitext(enabledsender)[0])
-        sendername = filename.replace('sender_', '')
-        sendernames.append(sendername)
+    sendernames = []
+    for filename in files:
+        location = '%(senderfolder)s/%(filename)s' % locals()
+        if os.path.isdir(location):
+            sendernames.append(filename)
 
     return sendernames
+
+
+def getEnabledSenderNames(sendername=None):
+    enabledsenders = []
+
+    senders = getSenderPluginsList()
+    for sendername in senders:
+        senderpath = os.path.join(CONFDIR, "sender_%(sendername)s.yml" % locals())
+        if os.path.isfile(senderpath):
+            enabledsenders.append(sendername)
+
+    return enabledsenders
 
 def getEnabledSenderObjects(sensorname, datasources):
     sendernames = getEnabledSenderNames()

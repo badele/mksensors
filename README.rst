@@ -20,8 +20,17 @@ All command must run with **root** account
 
 .. code-block:: console
 
+   # List senders
+   sudo mksensors list senders
+
+   # | Sender name   | Description                          | Enabled   |
+   # |---------------+--------------------------------------+-----------|
+   # | log           | Write sensors values in one log file | Yes       |
+   # | mqtt          | Send sensors values to Mqtt broker   |           |
+   # | rrd           | Write sensors values in the RRD file |           |
+   # | file          | Write sensors values in the file     |           |
+
    # Add sender
-   # [Debian] apt-get install rrdtool python-dev librrd-dev
    sudo mksensors enable sender rrd
    sudo mksensors enable sender log
 

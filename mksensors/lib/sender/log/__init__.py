@@ -27,6 +27,10 @@ class Sender(SenderPlugin):
         # Init variable
         self._file = None
 
+    def getDescription(self):
+        return "Write sensors values in one log file"
+
+
     def initSender(self, sensorname, datasources):
         """Init the sender object parameters"""
         super(Sender, self).initSender(sensorname, datasources)

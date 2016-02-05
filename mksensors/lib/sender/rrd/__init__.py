@@ -50,6 +50,10 @@ class Sender(SenderPlugin):
         self.config['sample4year'] = YEAR / self.config['step'] / self.config['pdpyear']
         self.config['sample4tenyear'] = 10 * YEAR / self.config['step'] / self.config['pdptenyear']
 
+
+    def getDescription(self):
+        return "Write sensors values in the RRD file"
+
     def initSender(self, sensorname, datasources):
         """Init the sender object parameters"""
         if 'location' not in self.config:

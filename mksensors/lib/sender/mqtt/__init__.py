@@ -28,6 +28,10 @@ class Sender(SenderPlugin):
         self.config = mks.loadSenderConfig(self.sendertype)
         self.mqttc = None
 
+    def getDescription(self):
+        return "Send sensors values to Mqtt broker"
+
+
     def initSender(self, sensorname, datasources):
         self.mqttc = self.mymqtt.mqtt.client.Client()
         self.mqttc.connect(self.config['broker'])

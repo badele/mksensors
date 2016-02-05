@@ -22,6 +22,10 @@ class SenderPlugin(object):
     def __init__(self):
         self.sendertype = None
 
+    def getDescription(self):
+        sendertype = self.sendertype
+        raise Exception('Please define getDescription in %(sendertype)s class' % locals())
+
     def initSender(self, sensorname, datasources):
         self.sensorname = sensorname
         self.datasources = datasources
