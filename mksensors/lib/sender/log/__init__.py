@@ -52,6 +52,6 @@ class Sender(SenderPlugin):
         for item in items:
             (datasource, value, ts) = item
             dsname = mks.datasource2String(datasource, '.')
-            content = "%(ts)s %(sensorname)s%(dsname)s %(value)s\n" % locals()
+            content = "%(ts)s %(sensorname)s.%(dsname)s %(value)s\n" % locals()
             self._file.write(content)
         self._file.flush()

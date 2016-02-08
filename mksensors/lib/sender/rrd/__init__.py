@@ -108,7 +108,7 @@ class Sender(SenderPlugin):
             # Check if rrd exist
             location = self.config['location']
             dsname = mks.datasource2String(datasource, '.')
-            filename = '%(location)s/%(sensorname)s%(dsname)s.rrd' % locals()
+            filename = '%(location)s/%(sensorname)s.%(dsname)s.rrd' % locals()
             if not os.path.exists(filename):
                 self.createRRD(filename, datasource)
 

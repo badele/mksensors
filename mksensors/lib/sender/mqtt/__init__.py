@@ -45,8 +45,7 @@ class Sender(SenderPlugin):
 
             if value is not None:
                 dsname = mks.datasource2String(datasource, '/')
-                fulltopicname = "%(topic)s/%(sensorname)s%(dsname)s" % locals()
-                print fulltopicname
+                fulltopicname = "%(topic)s/%(sensorname)s.%(dsname)s" % locals()
                 self.mqttc.publish(fulltopicname, value)
 
     def checkRequirements(self):

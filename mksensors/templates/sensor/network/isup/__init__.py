@@ -40,11 +40,11 @@ class Sensor(SensorPlugin):
         super(Sensor, self).initSensor()
 
         # Get hostnames list
-        hostnames = self.config.get('hostnames', [])
+        self.hostnames = self.config.get('hostnames', [])
 
         # Set datasource list
         datasources = []
-        for hostname in hostnames:
+        for hostname in self.hostnames:
             dsnames = (hostname, 'isup')
             datasources.append(dsnames)
 
@@ -53,11 +53,9 @@ class Sensor(SensorPlugin):
 
     def startSensor(self):
         # Get hostnames list
-        hostnames = self.config.get('hostnames', [])
-
         while True:
             # Ping for all hostnames
-            for hostname in hostnames:
+            for hostname in self.hostnames:
 
                 # Test connexion
                 rping = ping.ping(destination=hostname)

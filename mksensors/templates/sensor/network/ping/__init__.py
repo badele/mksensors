@@ -22,10 +22,10 @@ from mksensors.lib.sensor.network import ping
 
 class Sensor(SensorPlugin):
     def getSensortype(self):
-        return 'network.isup'
+        return 'network.netping'
 
     def getDescription(self):
-        return 'Return if the hosts are online'
+        return 'Return ping result'
 
     def checkRequirements(self):
         ping.checkRequirements()
@@ -42,12 +42,20 @@ class Sensor(SensorPlugin):
 
         # Get hostnames list
         hostnames = self.config.get('hostnames', [])
+        self.filtered_ds = self.config.get(
+            'datasources', [
+                'max_rtt', 'min_rtt', 'avg_rtt', 'packet_lost',
+                'packet_size', 'timeout', 'result',
+            ]
+        )
+
 
         # Set datasource list
         datasources = []
         for hostname in hostnames:
-            dsnames = (hostname, 'isup')
-            datasources.append(dsnames)
+            for filtered in self.filtered_ds:
+                dsnames = (hostname, filtered)
+                datasources.append(dsnames)
 
         self.senders = mks.getEnabledSenderObjects(self.sensorname, datasources)
 
@@ -56,17 +64,11 @@ class Sensor(SensorPlugin):
 
         # Set default parameters
         hostnames = self.config.get('hostnames', [])
-        filtered_ds = self.config.get(
-            'datasources', [
-                'max_rtt', 'min_rtt', 'avg_rtt', 'packet_lost',
-                'packet_size', 'timeout', 'result',
-            ]
-        )
 
         # Set datasource list
         datasources = []
         for hostname in hostnames:
-            for filtered in filtered_ds:
+            for filtered in self.filtered_ds:
                 dsnames = (hostname, filtered)
                 datasources.append(dsnames)
 
@@ -82,7 +84,7 @@ class Sensor(SensorPlugin):
 
                 # return value
                 values = []
-                for filtered in filtered_ds:
+                for filtered in self.filtered_ds:
                     datasource = (hostname, filtered)
                     value = result[filtered]
                     values.append((datasource, value, mks.getTimestamp()))

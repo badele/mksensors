@@ -99,11 +99,7 @@ def convertStrintToDict(content):
 
 
 def datasource2String(datasources, separator):
-    result = ""
-    for datasource in datasources:
-        result += "%(separator)s%(datasource)s" % locals()
-
-    return result
+    return separator.join(datasources)
 
 def getSensorTemplatePath(sensorlibraryname):
     """Get main sensor python project file"""

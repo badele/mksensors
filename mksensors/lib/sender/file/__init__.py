@@ -38,19 +38,23 @@ class Sender(SenderPlugin):
 
         # Check folder
         location = self.config['location']
-        if not os.path.isdir(location):
-            os.makedirs(location)
+        foldername = '%(location)s/%(sensorname)s/' % locals()
+        if not os.path.isdir(foldername):
+            os.makedirs(foldername)
 
+        # Open files
         sensorname = self.sensorname
-        for datasource in self.datasources:
+        for datasource in datasources:
             dsname = mks.datasource2String(datasource, '.')
-            logfilename = '%(location)s/%(sensorname)s%(dsname)s.log' % locals()
-            self._files[datasource] = open(logfilename, "a")
+            print dsname
+            logfilename = '%(location)s/%(sensorname)s/%(dsname)s.txt' % locals()
+            self._files[dsname] = open(logfilename, "a")
 
     def sendValues(self, sensorname, items):
 
         for item in items:
             (datasource, value, ts) = item
-            content = "%(ts)s %(value)s\n" % locals()
-            self._files[datasource].write(content)
-        self._files[datasource].flush()
+            dsname = mks.datasource2String(datasource, '.')
+            content = "%(ts)s %(dsname)s %(value)s\n" % locals()
+            self._files[dsname].write(content)
+            self._files[dsname].flush()
