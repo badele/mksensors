@@ -32,7 +32,7 @@ __authors__ = 'Bruno Adelé <bruno@adele.im>'
 __copyright__ = 'Copyright (C) 2016 Bruno Adelé'
 __description__ = """Tool for easily create sensors daemons"""
 __license__ = 'GPL'
-__version__ = '0.0.1'
+__commitnumber__ = "$id$"
 
 import os
 import re

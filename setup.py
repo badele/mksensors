@@ -10,6 +10,8 @@ except ImportError:
     use_setuptools()
     from setuptools import setup, find_packages
 
+from mksensors import __version__
+
 PYPI_RST_FILTERS = (
     # Replace code-blocks
     (r'\.\.\s? code-block::\s*(\w|\+)+', '::'),
@@ -46,7 +48,7 @@ def required(filename):
 
 setup(
     name="mksensors",
-    version="0.0.1",
+    version=__version__,
     description="Tool for easily create sensors daemons",
     long_description=rst('README.rst'), # + rst('CHANGELOG.txt'),
     author="Bruno Adelé",

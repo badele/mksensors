@@ -1,10 +1,10 @@
 #!/bin/bash
 
-__authors__='Bruno Adelé <bruno@adele.im>'
-__copyright__='Copyright (C) 2016 Bruno Adelé'
-__description__="""Tool for easily create sensors daemons"""
-__license__='GPL'
-__version__='0.0.1'
+__authors__ = 'Bruno Adelé <bruno@adele.im>'
+__copyright__ = 'Copyright (C) 2016 Bruno Adelé'
+__description__ = """Tool for easily create sensors daemons"""
+__license__ = 'GPL'
+__commitnumber__ = "$id$"
 
 # Add Fedora support - Claude Migne - 2016-01-27
 
@@ -184,8 +184,8 @@ install_fedora_req() {
    toinstall=$(echo "$toinstall" | xargs)
 
    if [ "$toinstall" != "" ]; then
-       dnf update
-       dnf install $toinstall
+       dnf update -y
+       dnf install -y $toinstall
    fi
 }
 
