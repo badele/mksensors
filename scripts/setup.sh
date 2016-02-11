@@ -1,10 +1,10 @@
 #!/bin/bash
 
-__authors__ = 'Bruno Adelé <bruno@adele.im>'
-__copyright__ = 'Copyright (C) 2016 Bruno Adelé'
-__description__ = """Tool for easily create sensors daemons"""
-__license__ = 'GPL'
-__commitnumber__ = "$id$"
+#__authors__ = 'Bruno Adelé <bruno@adele.im>'
+#__copyright__ = 'Copyright (C) 2016 Bruno Adelé'
+#__description__ = """Tool for easily create sensors daemons"""
+#__license__ = 'GPL'
+#__commitnumber__ = "$id$"
 
 # Add Fedora support - Claude Migne - 2016-01-27
 
