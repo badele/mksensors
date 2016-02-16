@@ -1,1 +1,1 @@
-include configuration.sample.yml
+global-include configuration.sample.yml
