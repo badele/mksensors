@@ -48,11 +48,13 @@ getLinuxType() {
         return
     fi
 
-    source /etc/os-release
-    if [ $ID = "fedora" ] && [ $VERSION_ID = "22" ]; then
-   		echo $ID
-    	return
-	fi
+    if [ -f /etc/os-release ]; then
+        source /etc/os-release
+        if [ $ID = "fedora" ] && [ $VERSION_ID = "22" ]; then
+            echo $ID
+            return
+        fi
+    fi
 
     echo "undefined"
 
