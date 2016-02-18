@@ -16,11 +16,13 @@ All command must run with **root** account
 Configure
 =========
 
-All command must run with **root** account
+All command must run with **root** account.
+
+Flow process example
 
 .. code-block:: console
 
-   # List senders
+   # List available senders
    sudo mksensors list senders
 
    # | Sender name   | Description                          | Enabled   |
@@ -30,7 +32,7 @@ All command must run with **root** account
    # | rrd           | Write sensors values in the RRD file |           |
    # | file          | Write sensors values in the file     |           |
 
-   # Add sender
+   # Add senders
    sudo mksensors enable sender rrd
    sudo mksensors enable sender log
 
@@ -38,8 +40,10 @@ All command must run with **root** account
    sudo mksensors enable sensor testping network.ping
    sudo mksensors enable sensor isup network.isup
 
-   # Restart mksensors services
+   # Check if configuration is correctly configured before starting the mksensors service
    sudo mksensors check
+
+   # Restart mksensors services
    sudo systemctl restart mksensors
 
    # Show running sensors
