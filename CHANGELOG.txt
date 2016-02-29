@@ -4,6 +4,7 @@ Changelog
 Version 0.0.2 (2016-01-31)
 --------------------------
 
+ * Add list sensors commandline
  * Add list senders commandline
  * Add check feature commandline
  * Add enable and disable sensor feature commandline

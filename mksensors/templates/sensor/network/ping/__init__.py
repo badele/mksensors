@@ -1,9 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
---param="'hostnames': ['8.8.8.8', '8.8.4.4']"
---param="'hostnames': ['8.8.8.8', '8.8.4.4'], 'pause': 10"
---param="'hostnames': ['8.8.8.8', '8.8.4.4'], 'filters': ['avg_rtt']"
+hostnames:
+  - 8.8.8.8
+  - 8.8.4.4
+datasources:
+  - max_rtt
+  - min_rtt
+  - avg_rtt
+  - packet_lost
+  - packet_size
+  - timeout
+  - result
 """
 
 __authors__ = 'Bruno Adelé <bruno@adele.im>'

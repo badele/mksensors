@@ -8,9 +8,9 @@ __license__ = 'GPL'
 __commitnumber__ = "$id$"
 
 import os
+import re
 import sys
 import ast
-import glob
 import time
 import pip
 import datetime
@@ -31,9 +31,11 @@ import yaml
 # Default Constant
 MKSPROGRAM = os.path.abspath(os.path.join(__file__, '../../..'))
 MKSDATA = '/var/lib/mksensors'
+MKSCONFIG = '%(MKSDATA)s/etc/mksensors.yml' % locals()
 CONFDIR = '%(MKSDATA)s/etc' % locals()
 BINDIR = '%(MKSDATA)s/bin' % locals()
 LOGDIR = '%(MKSDATA)s/log' % locals()
+TPLDIR = '%(MKSPROGRAM)s/templates' % locals()
 SUPERVISORDIR = '%(CONFDIR)s/supervisord.d' % locals()
 
 def getTimestamp():
@@ -41,6 +43,9 @@ def getTimestamp():
     ts = time.mktime(now.timetuple())
 
     return ts
+
+def isFileContain(filename, text):
+    return text in open(filename).read()
 
 def checkPackageInstalled(package):
     """Check python package is installed"""
@@ -104,8 +109,7 @@ def datasource2String(datasources, separator):
 def getSensorTemplatePath(sensorlibraryname):
     """Get main sensor python project file"""
 
-    mksprogram = MKSPROGRAM
-    templatedir = '%(mksprogram)s/templates/sensor' % locals()
+    templatedir = '%(TPLDIR)s/sensor' % globals()
     subpath = sensorlibraryname.replace('.', '/')
     sensortemplatepath = "%(templatedir)s/%(subpath)s" % locals()
 
@@ -148,13 +152,15 @@ def enableSupervisorConf(sensorname, sensorlibraryname, **kwargs):
         move(disabledconf, conffilename)
     else:
         # Prepare supervisor.conf
-        content = """[program:%(sensorname)s]
+        content = """# Copied from %(sensorlibraryname)s template
+[program:%(sensorname)s]
 command=%(pythonexec)s %(sensorcmd)s
 autostart=true
 autorestart=true
 redirect_stderr=true
 stdout_logfile=%(logdir)s/sensor_%(sensorname)s.log
-startsecs=5""" % locals()
+startsecs=5
+""" % locals()
 
         # Write configuration
         saveto(conffilename, content)
@@ -248,11 +254,11 @@ def enableSensorConfig(sensorname, sensortype, **kwargs):
     """Create sensor YAML configuration file"""
 
     # Sensor configuration filename
-    etc = CONFDIR
-    mksprogram = MKSPROGRAM
-    templatedir = '%(mksprogram)s/templates/sensor' % locals()
+    tpldir = TPLDIR
+    templatedir = '%(tpldir)s/sensor' % locals()
     subpath = sensortype.replace('.', '/')
 
+    etc = CONFDIR
     srcconf = '%(templatedir)s/%(subpath)s/configuration.sample.yml' % locals()
     dstconf = '%(etc)s/sensor_%(sensorname)s.yml' % locals()
     disabledconf = '%(etc)s/sensor_%(sensorname)s.yml.disabled' % locals()
@@ -291,15 +297,73 @@ def disableSensorConfig(sensorname):
     # Disabled configuration
     move(srcconf, disabledconf)
 
+def getSensorPluginsList():
+
+    sensorsfolder = '%(TPLDIR)s/sensor/' % globals()
+
+    # Search plugin tamplates
+    sensornames = {}
+    for root, dirs, files in os.walk(sensorsfolder):
+        for fname in files:
+            if fname.endswith("__init__.py"):
+                filename = os.path.join(root, fname)
+                if isFileContain(filename, 'Sensor(SensorPlugin)'):
+                    sensorname = root.replace(sensorsfolder, '').replace('/', '.')
+                    fullpath = os.path.join(root,fname)
+
+                    # Try get sensor informations
+                    try:
+                        modulename = 'mksensors.templates.sensor.%s' % sensorname
+                        print modulename
+                        mod = loadModule(modulename)
+                        sensorobj = mod.Sensor()
+                        description = sensorobj.getDescription()
+                    except Exception as e:
+                        description = 'Cannot load the %(sensorname)s' % locals()
+                        print description
+
+                    sensornames[sensorname] = {
+                        'location': fullpath,
+                        'description': description,
+                        'usedby': []
+                    }
+
+    return sensornames
+
+def getEnabledSensorNames(sensorlist):
+    enabledsensors = {}
+
+    for root, dirs, files in os.walk(SUPERVISORDIR):
+        for fname in files:
+            if fname.startswith("mks_") and fname.endswith(".conf"):
+                supervisorconf = os.path.join(root,fname)
+
+                # Check if the sensor is in template library
+                sensorname = None
+                regex = re.compile('Copied from (.*) template')
+                with open(supervisorconf) as f:
+                    for line in f:
+                        result = regex.search(line)
+                        if result:
+                            sensorname = result.group(1)
+
+                enabledsensors[fname] = {
+                    'supervisorconf:': supervisorconf,
+                }
+                if sensorname:
+                    enabledsensors[fname]['sensorname'] = sensorname
+
+
+    return enabledsensors
+
 
 def enableSenderConfig(sendername, **kwargs):
     """Enable sender YAML configuration file"""
 
     # Sender configuration filename
-    etc = CONFDIR
-    mksprogram = MKSPROGRAM
-    libdir = '%(mksprogram)s/lib' % locals()
+    libdir = '%(MKSPROGRAM)s/lib' % globals()
 
+    etc = CONFDIR
     srcconf = '%(libdir)s/sender/%(sendername)s/configuration.sample.yml' % locals()
     dstconf = '%(etc)s/sender_%(sendername)s.yml' % locals()
     disabledconf = '%(etc)s/sender_%(sendername)s.yml.disabled' % locals()
@@ -322,10 +386,9 @@ def disableSenderConfig(sendername, **kwargs):
     """Disable sender YAML configuration file"""
 
     # Sender configuration filename
-    etc = CONFDIR
-    mksprogram = MKSPROGRAM
-    libdir = '%(mksprogram)s/lib' % locals()
+    libdir = '%(MKSPROGRAM)s/lib' % globals()
 
+    etc = CONFDIR
     dstconf = '%(etc)s/sender_%(sendername)s.yml' % locals()
     disabledconf = '%(etc)s/sender_%(sendername)s.yml.disabled' % locals()
 
@@ -346,6 +409,7 @@ def disableSenderConfig(sendername, **kwargs):
 
 
 def getSenderPluginsList():
+
     senderfolder = '%(MKSPROGRAM)s/lib/sender' % globals()
     files = os.listdir(senderfolder)
 
@@ -358,11 +422,10 @@ def getSenderPluginsList():
     return sendernames
 
 
-def getEnabledSenderNames(sendername=None):
+def getEnabledSenderNames(senderlist):
     enabledsenders = []
 
-    senders = getSenderPluginsList()
-    for sendername in senders:
+    for sendername in senderlist:
         senderpath = os.path.join(CONFDIR, "sender_%(sendername)s.yml" % locals())
         if os.path.isfile(senderpath):
             enabledsenders.append(sendername)
@@ -386,28 +449,36 @@ def getEnabledSenderObjects(sensorname, datasources):
     return senders
 
 
-def loadSenderConfig(sendername):
-    confdir = CONFDIR
-    conffilename = '%(confdir)s/sender_%(sendername)s.yml' % locals()
-
+def loadYAMLFile(conffilename):
     config = {}
     if os.path.isfile(conffilename):
         with open(conffilename, 'r') as stream:
             config = yaml.load(stream)
 
     return config
+
+
+def loadMkSensorsConfig():
+    templatedir = '%(MKSPROGRAM)s/lib/mks' % globals()
+    srcconf = '%(templatedir)s/configuration.sample.yml' % locals()
+
+    # Check if default mksensors exists
+    if not os.path.isfile(MKSCONFIG):
+        copyfile(srcconf, MKSCONFIG)
+
+    return loadYAMLFile(MKSCONFIG)
+
+
+def loadSenderConfig(sendername):
+    confdir = CONFDIR
+    conffilename = '%(confdir)s/sender_%(sendername)s.yml' % locals()
+    return loadYAMLFile(conffilename)
 
 
 def loadSensorConfig(sensorname):
     confdir = CONFDIR
     conffilename = '%(confdir)s/sensor_%(sensorname)s.yml' % locals()
-
-    config = {}
-    if os.path.isfile(conffilename):
-        with open(conffilename, 'r') as stream:
-            config = yaml.load(stream)
-
-    return config
+    return loadYAMLFile(conffilename)
 
 
 

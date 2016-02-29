@@ -38,6 +38,8 @@ import os
 import re
 import sys
 import glob
+import logging
+
 import stat
 from distutils.spawn import find_executable
 
@@ -45,6 +47,8 @@ from docopt import docopt
 from tabulate import tabulate
 
 from lib import mks
+
+_LOGGER = logging.getLogger(__name__)
 
 def rootRequire():
     """Check if run root session"""
@@ -59,6 +63,8 @@ def enableSensor(sensorname, sensorlibraryname, **kwargs):
      - Create sensor user script from template
      - Create YAML configuration from sensor template
      """
+
+    _LOGGER.info('enableSensor %(sensorname)s(%(sensorlibraryname)s)' % locals())
 
     # Check packages installation
     modulename = 'mksensors.templates.sensor.%s' % sensorlibraryname
@@ -84,6 +90,8 @@ def disableSensor(sensorname, **kwargs):
      - Disable YAML configuration from sensor template
      """
 
+    _LOGGER.info('disableSensor %(sensorname)s' % locals())
+
     # Create Supervisor configuration
     mks.disableSupervisorConf(sensorname)
 
@@ -101,11 +109,15 @@ def removeSensor(sensorname):
      - Remove Sensor user script
      - Remove Sensor configuration
     """
+    _LOGGER.info('removeSensor %(sensorname)s' % locals())
+
     mks.removeSupervisorConf(sensorname=sensorname)
     mks.removeSensorUser(sensorname)
     mks.disableSensorConfig(sensorname)
 
 def checkMkSensors():
+    _LOGGER.info('checkMkSensors' % locals())
+
     allerrors = mks.checkMkSensors()
 
     if not allerrors:
@@ -118,25 +130,40 @@ def checkMkSensors():
         for error in allerrors[sendername]:
             print "  - %(error)s" % locals()
 
-def showSensorsList():
-    supervisorfiles = glob.glob(os.path.join(mks.SUPERVISORDIR, "mks_*"))
 
-    for filename in supervisorfiles:
-        content = open(filename).read()
-        m = re.match(r".* (.*/__init__\.py)", content, re.DOTALL)
-        # if m:
-        #     sensorfilename = m.group(1)
-        #     sensormod = mks.loadModule(sensorfilename)
+def showSensorsList():
+    _LOGGER.info('showSensorsList')
+
+    # Get sensors informations
+    allsensors = mks.getSensorPluginsList()
+    enabledsensors = mks.getEnabledSensorNames(allsensors)
+
+    # Search if use the sensor from mksensors template
+    for supervisorconf in enabledsensors.keys():
+        if 'sensorname' in enabledsensors[supervisorconf]:
+            sensorname = enabledsensors[supervisorconf]['sensorname']
+            allsensors[sensorname]['usedby'].append(supervisorconf)
+
+    # Show result
+    sensors = []
+    for sensorkey in allsensors.keys():
+        description = allsensors[sensorkey]['description']
+        usedby = ', '.join(allsensors[sensorkey]['usedby'])
+        sensors.append((sensorkey, description, usedby))
+
+    header = ['Sensor name', 'Description', 'Used by']
+    print tabulate(sensors, headers=header, tablefmt="orgtbl")
+
 
 def showSendersList():
+    _LOGGER.info('showSendersList')
+
     allsenders = mks.getSenderPluginsList()
-    enabledsenders = mks.getEnabledSenderNames()
+    enabledsenders = mks.getEnabledSenderNames(allsenders)
 
     senders = []
     for sendername in allsenders:
         # Get senders information
-        description = ""
-        enabled = ''
         try:
             modulename = 'mksensors.lib.sender.%s' % sendername
             mod = mks.loadModule(modulename)
@@ -144,6 +171,7 @@ def showSendersList():
             description = senderobj.getDescription()
             enabled = 'Yes' if sendername in enabledsenders else ''
         except Exception as e:
+            enabled = ''
             description = 'Cannot load the sender'
 
         senders.append((sendername, description, enabled))
@@ -152,8 +180,9 @@ def showSendersList():
     print tabulate(senders, headers=header, tablefmt="orgtbl")
 
 
-
 def enableSender(sendername, **kwargs):
+    _LOGGER.info('enableSender %(sendername)s' % locals())
+
     # Check packages installation
     modulename = 'mksensors.lib.sender.%s' % sendername
 
@@ -173,6 +202,8 @@ def enableSender(sendername, **kwargs):
     mks.checkMkSensors()
 
 def disableSender(sendertype, **kwargs):
+    _LOGGER.info('disableSender %(sendertype)s' % locals())
+
     # Create sensor user configuration
     mks.disableSenderConfig(
         sendername=sendertype,
@@ -181,8 +212,12 @@ def disableSender(sendertype, **kwargs):
     )
 
 
-
 def main():
+    # Init logging system
+    logdir = mks.LOGDIR
+    logname = '%(logdir)s/mksensors.log' % locals()
+    logging.basicConfig(filename=logname,level=logging.DEBUG)
+
     argopts = docopt(__doc__)
 
     # Force use root account

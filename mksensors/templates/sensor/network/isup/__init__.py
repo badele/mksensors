@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
---param="'hostnames': ['8.8.8.8', '8.8.4.4']"
---param="'hostnames': ['8.8.8.8', '8.8.4.4'], 'pause': 10"
+hostnames:
+  - 8.8.8.8
+  - 8.8.4.4
+
 """
 
 __authors__ = 'Bruno Adelé <bruno@adele.im>'

@@ -36,6 +36,14 @@ Flow process example
    sudo mksensors enable sender rrd
    sudo mksensors enable sender log
 
+   # List available sensors from mksensors template
+   sudo mksensors list sensors
+
+   # | Sensor name   | Description                    | Used by                                |
+   # |---------------+--------------------------------+----------------------------------------|
+   # | network.isup  | Return if the hosts are online | mks_officeisup.conf, mks_homeisup.conf |
+   # | network.ping  | Return ping result             | mks_netquality.conf                    |
+
    # Add sensors
    sudo mksensors enable sensor testping network.ping
    sudo mksensors enable sensor isup network.isup
