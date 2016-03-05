@@ -7,7 +7,7 @@ Mksensors plugins
 
 import re
 import sys
-import traceback
+import logging
 
 from mksensors.lib import mks
 
@@ -17,10 +17,24 @@ __description__ = """Tool for easily create sensors daemons"""
 __license__ = 'GPL'
 __commitnumber__ = "$id$"
 
+_LOGGER = logging.getLogger(__name__)
+mks.init_logging(logger=_LOGGER, loglevel=mks.LOGSEVERITY['DEBUG'])
 
 class SenderPlugin(object):
-    def __init__(self):
-        self.sendertype = None
+    def __init__(self, sendertype, logger):
+        try:
+            self.sendertype = sendertype
+            self.logger = logger
+            self.config = mks.loadSenderConfig(self.sendertype)
+            self.mksconfig = mks.loadMkSensorsConfig()
+
+            # Init log
+            loglevel = mks.LOGSEVERITY[self.mksconfig.get('loglevel', 'WARNING')]
+            mks.init_logging(self.logger, loglevel=loglevel)
+
+        except:
+            _LOGGER.exception('SenderPlugin Init error')
+            raise
 
     def getDescription(self):
         sendertype = self.sendertype
@@ -34,11 +48,14 @@ class SenderPlugin(object):
         sendertype = self.sendertype
         errors = self.checkConfiguration()
         if errors:
+            self.logger.error('Sender configuration error for %(sensorname)s' % locals())
             errormess = "Cannot init %(sendertype)s sender:\n" % locals()
             for error in errors:
                 errormess += " - %(error)s\n" % locals()
+                self.logger.error(' - %(error)s' % locals())
 
             raise Exception(errormess)
+
 
     def getConfigFilename(self):
         """Get Sender YAML configuration"""
@@ -69,13 +86,22 @@ class SenderPlugin(object):
 
 
 class SensorPlugin(object):
-    def __init__(self):
-        self.sensorname = mks.getSensorName()
-        self.config = mks.loadSensorConfig(self.sensorname)
-        self.senders = []
+    def __init__(self, logger):
+        try:
+            self.logger = logger
+            self.sensorname = mks.getSensorName()
+            self.config = mks.loadSensorConfig(self.sensorname)
+            self.mksconfig = mks.loadMkSensorsConfig()
+            self.senders = []
+        except:
+            self.logger.exception('SenderPlugin Init error')
+            raise
 
     def initSensor(self):
-        pass
+        sensorname = self.sensorname
+        logname = 'sensor_%(sensorname)s' % locals()
+        loglevel = mks.LOGSEVERITY[self.mksconfig.get('loglevel', 'WARNING')]
+        mks.init_logging(self.logger, loglevel=loglevel)
 
     def flushMessages(self):
         sys.stdout.flush()
@@ -114,10 +140,4 @@ class SensorPlugin(object):
     def sendValues(self, values):
 
         for sender in self.senders:
-            try:
-                sender.sendValues(self.sensorname, values)
-            except Exception as e:
-                # Todo: log in mksensors.log
-                exc_type, exc_value, exc_traceback = sys.exc_info()
-                print repr(traceback.print_exception(exc_type, exc_value, exc_traceback,
-                                  limit=2, file=sys.stdout))
+            sender.sendValues(self.sensorname, values)

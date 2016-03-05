@@ -15,7 +15,10 @@ import time
 import pip
 import datetime
 import pkg_resources
-import traceback
+
+# Log
+import logging
+from logging.handlers import RotatingFileHandler
 
 from shutil import copyfile, copytree, rmtree, move
 from copy import deepcopy
@@ -25,8 +28,9 @@ try:
 except:
     from urlparse import urlparse
 
-
 import yaml
+
+
 
 # Default Constant
 MKSPROGRAM = os.path.abspath(os.path.join(__file__, '../../..'))
@@ -37,6 +41,38 @@ BINDIR = '%(MKSDATA)s/bin' % locals()
 LOGDIR = '%(MKSDATA)s/log' % locals()
 TPLDIR = '%(MKSPROGRAM)s/templates' % locals()
 SUPERVISORDIR = '%(CONFDIR)s/supervisord.d' % locals()
+LOGSEVERITY = {
+    'CRITICAL': 50,
+    'FATAL': 50,
+    'ERROR': 40,
+    'WARNING': 30,
+    'WARN': 30,
+    'INFO': 20,
+    'DEBUG': 10,
+    'NOTSET': 0
+}
+
+
+def init_logging(logger, filename='mksensors', loglevel=logging.WARNING):
+    logdir = LOGDIR
+    logname = '%(logdir)s/%(filename)s.log' % locals()
+    formater = logging.Formatter('%(asctime)-15s :: %(levelname)s :: %(name)s :: %(message)s')
+
+    # Set log level
+    logger.setLevel(loglevel)
+
+    # Add file handler
+    if not logger.handlers:
+        file_handler = RotatingFileHandler(logname,'a', 100000, 1)
+        file_handler.setLevel(loglevel)
+        file_handler.setFormatter(formater)
+        logger.addHandler(file_handler)
+
+
+# Init log
+_LOGGER = logging.getLogger(__name__)
+init_logging(logger=_LOGGER, loglevel=LOGSEVERITY['DEBUG'])
+
 
 def getTimestamp():
     now = datetime.datetime.now()
@@ -46,6 +82,7 @@ def getTimestamp():
 
 def isFileContain(filename, text):
     return text in open(filename).read()
+
 
 def checkPackageInstalled(package):
     """Check python package is installed"""
@@ -158,7 +195,7 @@ command=%(pythonexec)s %(sensorcmd)s
 autostart=true
 autorestart=true
 redirect_stderr=true
-stdout_logfile=%(logdir)s/sensor_%(sensorname)s.log
+stdout_logfile=%(logdir)s/supervisor_%(sensorname)s.log
 startsecs=5
 """ % locals()
 
@@ -330,12 +367,13 @@ def getSensorPluginsList():
 
     return sensornames
 
-def getEnabledSensorNames(sensorlist):
+def getEnabledSensorNames():
     enabledsensors = {}
 
     for root, dirs, files in os.walk(SUPERVISORDIR):
         for fname in files:
             if fname.startswith("mks_") and fname.endswith(".conf"):
+                shortname = re.sub('^mks_', '', re.sub('\.conf$', '', fname))
                 supervisorconf = os.path.join(root,fname)
 
                 # Check if the sensor is in template library
@@ -347,11 +385,12 @@ def getEnabledSensorNames(sensorlist):
                         if result:
                             sensorname = result.group(1)
 
-                enabledsensors[fname] = {
+                enabledsensors[shortname] = {
+                    'supervisoname': fname,
                     'supervisorconf:': supervisorconf,
                 }
                 if sensorname:
-                    enabledsensors[fname]['sensorname'] = sensorname
+                    enabledsensors[shortname]['sensorname'] = sensorname
 
 
     return enabledsensors
@@ -422,7 +461,8 @@ def getSenderPluginsList():
     return sendernames
 
 
-def getEnabledSenderNames(senderlist):
+def getEnabledSenderNames():
+    senderlist = getSenderPluginsList()
     enabledsenders = []
 
     for sendername in senderlist:
@@ -435,16 +475,18 @@ def getEnabledSenderNames(senderlist):
 def getEnabledSenderObjects(sensorname, datasources):
     sendernames = getEnabledSenderNames()
 
+    _LOGGER.debug('Try to load %(sendernames)s senders' % locals())
     senders = []
     for sendername in sendernames:
         modulename = 'mksensors.lib.sender.%s' % sendername
-        mod = loadModule(modulename)
         try:
+            _LOGGER.debug('  + Try to load %(modulename)s sender' % locals())
+            mod = loadModule(modulename)
             senderobj = mod.Sender()
             senderobj.initSender(sensorname, datasources)
             senders.append(senderobj)
-        except Exception as e:
-            print e.message
+        except:
+            _LOGGER.exception(getEnabledSenderObjects)
 
     return senders
 
@@ -466,7 +508,11 @@ def loadMkSensorsConfig():
     if not os.path.isfile(MKSCONFIG):
         copyfile(srcconf, MKSCONFIG)
 
-    return loadYAMLFile(MKSCONFIG)
+    # Log Level
+    mksconfig = loadYAMLFile(MKSCONFIG)
+    mksconfig['loglevel'] = mksconfig.get('loglevel', 'warning').upper()
+
+    return mksconfig
 
 
 def loadSenderConfig(sendername):

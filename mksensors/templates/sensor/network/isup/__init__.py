@@ -14,12 +14,14 @@ __license__ = 'GPL'
 __commitnumber__ = "$id$"
 
 import time
+import logging
 from copy import deepcopy
 
 from mksensors.lib import mks
 from mksensors.lib.mks.plugins import SensorPlugin
 from mksensors.lib.sensor.network import ping
 
+_LOGGER = logging.getLogger('network.isup')
 
 class Sensor(SensorPlugin):
 
@@ -34,8 +36,11 @@ class Sensor(SensorPlugin):
 
     def __init__(self):
         """Init Sensor class"""
-        super(Sensor, self).__init__()
+        super(Sensor, self).__init__(_LOGGER)
         self.hostnames = []
+
+        sensorname = self.sensorname
+        self.logger.info('Init %(sensorname)s sensor object' % locals())
 
     def initSensor(self):
         """Init the Sensor object parameters"""
@@ -49,15 +54,19 @@ class Sensor(SensorPlugin):
         for hostname in self.hostnames:
             dsnames = (hostname, 'isup')
             datasources.append(dsnames)
+            self.logger.info('Add %(hostname)s to check' % locals())
 
         self.senders = mks.getEnabledSenderObjects(self.sensorname, datasources)
 
 
     def startSensor(self):
         # Get hostnames list
+        self.logger.info('Start the sensor')
         while True:
             # Ping for all hostnames
             for hostname in self.hostnames:
+
+                self.logger.info('Check if the %(hostname)s is up' % locals())
 
                 # Test connexion
                 rping = ping.ping(destination=hostname)
@@ -72,11 +81,14 @@ class Sensor(SensorPlugin):
                 value = result['result']
                 values.append((datasource, value, mks.getTimestamp()))
 
+                isup = 'Yes' if value == 255 else 'No'
+                self.logger.info('The %(hostname)s is up => %(isup)s' % locals())
+
                 self.sendValues(values)
 
             # Sleep
             self.flushMessages()
-            time.sleep(self.config.get('pause', 15))
+            time.sleep(self.mksconfig.get('stepinterval', 15))
 
 
 if __name__ == '__main__':

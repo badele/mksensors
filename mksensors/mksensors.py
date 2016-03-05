@@ -49,6 +49,7 @@ from tabulate import tabulate
 from lib import mks
 
 _LOGGER = logging.getLogger(__name__)
+mks.init_logging(logger=_LOGGER, loglevel=mks.LOGSEVERITY['DEBUG'])
 
 def rootRequire():
     """Check if run root session"""
@@ -136,7 +137,7 @@ def showSensorsList():
 
     # Get sensors informations
     allsensors = mks.getSensorPluginsList()
-    enabledsensors = mks.getEnabledSensorNames(allsensors)
+    enabledsensors = mks.getEnabledSensorNames()
 
     # Search if use the sensor from mksensors template
     for supervisorconf in enabledsensors.keys():
@@ -159,7 +160,7 @@ def showSendersList():
     _LOGGER.info('showSendersList')
 
     allsenders = mks.getSenderPluginsList()
-    enabledsenders = mks.getEnabledSenderNames(allsenders)
+    enabledsenders = mks.getEnabledSenderNames()
 
     senders = []
     for sendername in allsenders:
@@ -213,10 +214,7 @@ def disableSender(sendertype, **kwargs):
 
 
 def main():
-    # Init logging system
-    logdir = mks.LOGDIR
-    logname = '%(logdir)s/mksensors.log' % locals()
-    logging.basicConfig(filename=logname,level=logging.DEBUG)
+    mks.init_logging(_LOGGER, loglevel=logging.INFO)
 
     argopts = docopt(__doc__)
 

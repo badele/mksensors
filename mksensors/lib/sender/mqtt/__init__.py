@@ -11,6 +11,7 @@ __description__ = """Tool for easily create sensors daemons"""
 __license__ = 'GPL'
 __commitnumber__ = "$id$"
 
+import logging
 
 from mksensors.lib import mks
 from mksensors.lib.mks.plugins import SenderPlugin
@@ -20,22 +21,32 @@ WEEK = DAY * 7
 MONTH = DAY * 31
 YEAR = DAY * 365
 
+_LOGGER = logging.getLogger(__name__)
+mks.init_logging(logger=_LOGGER, loglevel=mks.LOGSEVERITY['DEBUG'])
+
 
 class Sender(SenderPlugin):
     def __init__(self):
-        self.mymqtt = __import__('paho.mqtt.client')
-        self.sendertype = 'mqtt'
-        self.config = mks.loadSenderConfig(self.sendertype)
-        self.mqttc = None
+        try:
+            super(Sender, self).__init__('mqtt', _LOGGER)
+            self.mymqtt = __import__('paho.mqtt.client')
+            self.mqttc = None
+        except:
+            _LOGGER.exception('SenderPlugin Init error')
+            raise
 
     def getDescription(self):
         return "Send sensors values to Mqtt broker"
 
 
     def initSender(self, sensorname, datasources):
+        super(Sender, self).initSender(sensorname, datasources)
+
         self.mqttc = self.mymqtt.mqtt.client.Client()
         self.mqttc.connect(self.config['broker'])
         self.mqttc.loop_start()
+
+        self.logger.debug('Sender is initialized')
 
     def sendValues(self, sensorname, items):
 

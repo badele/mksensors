@@ -101,7 +101,7 @@ class Sensor(SensorPlugin):
 
             # Sleep
             self.flushMessages()
-            time.sleep(self.config.get('pause', 15))
+            time.sleep(self.mksconfig.get('stepinterval', '15'))
 
 if __name__ == '__main__':
     sensor = Sensor()

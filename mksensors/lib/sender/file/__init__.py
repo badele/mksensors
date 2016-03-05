@@ -12,16 +12,23 @@ __license__ = 'GPL'
 __commitnumber__ = "$id$"
 
 import os
+import logging
+
 from mksensors.lib import mks
 from mksensors.lib.mks.plugins import SenderPlugin
+
+_LOGGER = logging.getLogger(__name__)
+mks.init_logging(logger=_LOGGER, loglevel=mks.LOGSEVERITY['DEBUG'])
 
 
 class Sender(SenderPlugin):
     def __init__(self):
         """Init sender class"""
-        super(Sender, self).__init__()
-        self.sendertype = 'file'
-        self.config = mks.loadSenderConfig(self.sendertype)
+        try:
+            super(Sender, self).__init__('file', _LOGGER)
+        except:
+            _LOGGER.exception('SenderPlugin Init error')
+            raise
 
         # Init variable
         self._files = {}
@@ -49,6 +56,8 @@ class Sender(SenderPlugin):
             print dsname
             logfilename = '%(location)s/%(sensorname)s/%(dsname)s.txt' % locals()
             self._files[dsname] = open(logfilename, "a")
+
+        self.logger.debug('Sender is initialized')
 
     def sendValues(self, sensorname, items):
 
