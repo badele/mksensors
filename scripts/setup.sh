@@ -61,13 +61,20 @@ getLinuxType() {
 }
 
 install_pip(){
-    if [ ! -x "$MKSPROGRAM/bin/mksensors" ]; then
+    action=$1
+
+    if [ ! -x "$MKSPROGRAM/bin/mksensors" -o "$action" == "update" ]; then
+        rm -rf "$MKSPROGRAM"
         virtualenv --setuptools --no-site-packages $MKSPROGRAM
     fi
 }
 
 install_mksensors(){
-    $pip install -U git+https://github.com/badele/mksensors.git
+    action=$1
+
+    if [ ! -x "$MKSPROGRAM/bin/mksensors" -o "$action" == "update" ]; then
+        $pip install -U git+https://github.com/badele/mksensors.git
+    fi
 }
 
 check_mksensors_configuration(){
@@ -215,10 +222,15 @@ install_requirements() {
 # Verify if run with root account
 checkRootUser
 
+ACTION=''
+if [ "$1" == "update" ]; then
+    ACTION='update'
+fi
+
 # Install
 OS=$(getLinuxType)
 install_requirements "$OS"
-install_pip
-install_mksensors
+install_pip "$ACTION"
+install_mksensors "$ACTION"
 check_mksensors_configuration
 echo "done"
