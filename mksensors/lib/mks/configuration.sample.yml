@@ -1,0 +1,5 @@
+# Interval between two sensors checking
+stepinterval: 15 # In seconds
+
+# Loglevel (critical, fatal, error, warning, warn, info, debug)
+loglevel: warning
