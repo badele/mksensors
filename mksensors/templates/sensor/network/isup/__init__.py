@@ -40,7 +40,7 @@ class Sensor(SensorPlugin):
         self.hostnames = []
 
         sensorname = self.sensorname
-        self.logger.info('Init %(sensorname)s sensor object' % locals())
+        self.logger.debug('Init %(sensorname)s sensor object' % locals())
 
     def initSensor(self):
         """Init the Sensor object parameters"""
@@ -54,19 +54,21 @@ class Sensor(SensorPlugin):
         for hostname in self.hostnames:
             dsnames = (hostname, 'isup')
             datasources.append(dsnames)
-            self.logger.info('Add %(hostname)s to check' % locals())
+
+            fullname = '.'.join(dsnames)
+            self.logger.debug('Add %(fullname)s datasource' % locals())
 
         self.senders = mks.getEnabledSenderObjects(self.sensorname, datasources)
 
 
     def startSensor(self):
         # Get hostnames list
-        self.logger.info('Start the sensor')
+        self.logger.debug('Start the sensor')
         while True:
             # Ping for all hostnames
             for hostname in self.hostnames:
 
-                self.logger.info('Check if the %(hostname)s is up' % locals())
+                self.logger.debug('Check if the %(hostname)s is up' % locals())
 
                 # Test connexion
                 rping = ping.ping(destination=hostname)
@@ -82,13 +84,15 @@ class Sensor(SensorPlugin):
                 values.append((datasource, value, mks.getTimestamp()))
 
                 isup = 'Yes' if value == 255 else 'No'
-                self.logger.info('The %(hostname)s is up => %(isup)s' % locals())
+                self.logger.debug('The %(hostname)s is up => %(isup)s' % locals())
 
                 self.sendValues(values)
 
             # Sleep
+            stepinterval = int(self.mksconfig.get('stepinterval', 15))
             self.flushMessages()
-            time.sleep(self.mksconfig.get('stepinterval', 15))
+            self.logger.debug('Sleep for %(stepinterval)s seconds' % locals())
+            time.sleep(stepinterval)
 
 
 if __name__ == '__main__':

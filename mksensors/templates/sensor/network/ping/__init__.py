@@ -21,11 +21,14 @@ __license__ = 'GPL'
 __commitnumber__ = "$id$"
 
 import time
+import logging
 from copy import deepcopy
 
 from mksensors.lib import mks
 from mksensors.lib.mks.plugins import SensorPlugin
 from mksensors.lib.sensor.network import ping
+
+_LOGGER = logging.getLogger('network.isup')
 
 
 class Sensor(SensorPlugin):
@@ -40,8 +43,11 @@ class Sensor(SensorPlugin):
 
     def __init__(self):
         """Init Sensor class"""
-        super(Sensor, self).__init__()
+        super(Sensor, self).__init__(_LOGGER)
         self.hostnames = []
+
+        sensorname = self.sensorname
+        self.logger.debug('Init %(sensorname)s sensor object' % locals())
 
 
     def initSensor(self):
@@ -65,6 +71,9 @@ class Sensor(SensorPlugin):
                 dsnames = (hostname, filtered)
                 datasources.append(dsnames)
 
+                fullname = '.'.join(dsnames)
+                self.logger.debug('Add %(fullname)s datasource' % locals())
+
         self.senders = mks.getEnabledSenderObjects(self.sensorname, datasources)
 
 
@@ -80,9 +89,12 @@ class Sensor(SensorPlugin):
                 dsnames = (hostname, filtered)
                 datasources.append(dsnames)
 
+        self.logger.debug('Start the sensor')
         while True:
             # Ping for all hostnames
             for hostname in hostnames:
+                self.logger.debug('Ping %(hostname)s' % locals())
+
                 # Test connexion
                 rping = ping.ping(destination=hostname)
                 rping.run()
@@ -97,11 +109,16 @@ class Sensor(SensorPlugin):
                     value = result[filtered]
                     values.append((datasource, value, mks.getTimestamp()))
 
+                avg_rtt = result['avg_rtt']
+                self.logger.debug('ping result for %(hostname)s => %(avg_rtt)s ms' % locals())
+
                 self.sendValues(values)
 
             # Sleep
+            stepinterval = int(self.mksconfig.get('stepinterval', 15))
             self.flushMessages()
-            time.sleep(self.mksconfig.get('stepinterval', '15'))
+            self.logger.debug('Sleep for %(stepinterval)s seconds' % locals())
+            time.sleep(stepinterval)
 
 if __name__ == '__main__':
     sensor = Sensor()
