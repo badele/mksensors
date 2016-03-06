@@ -1,6 +1,36 @@
-location: '<SAMPLE>/var/lib/mksensors/datas/rrd</SAMPLE>' # Folder location for storing the sensors values
-step: 15
-dayres: 60
-weekres: 300
-monthres: 900
+location: '/var/lib/mksensors/datas/rrd' # Folder location for storing the sensors values
 
+# RRD parameters (with 15s stepinterval)
+rrd:
+  unknowtime: 60
+  daily:
+    lastaverage: # 1m x day
+      pdp: 4
+      nbsample: 1440
+    minmax: # 1h x week
+      pdp: 240
+      nbsample: 1440
+
+  monthly:
+    lastaverage: # 5m x month
+      pdp: 20
+      nbsample: 8928
+    minmax: # 6h x month
+      pdp: 1440
+      nbsample: 124
+
+  yearly:
+    lastaverage: # 15m x year
+      pdp: 60
+      nbsample: 35040
+    minmax: # 12h x year
+      pdp: 2880
+      nbsample: 730
+
+  yearlyten:
+    lastaverage: # 1h x 10year
+      pdp: 240
+      nbsample: 87600
+    minmax: # 1d x 10year
+      pdp: 5760
+      nbsample: 3650
