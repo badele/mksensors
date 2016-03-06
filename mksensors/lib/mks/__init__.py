@@ -171,7 +171,7 @@ def getSensorLogPath(sensorname):
     return sensorlogpath
 
 
-def enableSupervisorConf(sensorname, sensorlibraryname, **kwargs):
+def enableSupervisorConf(sensorname, sensorlibraryname, force):
     """Create supervisor sensor conf"""
 
     # Add parameters
@@ -182,7 +182,7 @@ def enableSupervisorConf(sensorname, sensorlibraryname, **kwargs):
     conffilename = "%(supervisordir)s/mks_%(sensorname)s.conf" % locals()
     disabledconf = '%(conffilename)s.disabled' % locals()
 
-    if os.path.isfile(conffilename):
+    if not force and os.path.isfile(conffilename):
         return
 
     if os.path.isfile(disabledconf):
@@ -250,24 +250,26 @@ def removeSensorUser(sensorname):
     rmtree(sensoruserpath)
 
 
-def copySensorTemplateToUserBin(sensorname, sensorlibraryname):
+def copySensorTemplateToUserBin(sensorname, sensorlibraryname, force):
     """Copy sensor template to user script folder"""
 
     sensorlibrarypath = getSensorTemplatePath(sensorlibraryname)
     sensoruserpath = getSensorBinPath(sensorname)
     disableduserpath ='%(sensoruserpath)s.disabled' % locals()
 
-    # Check if sensor user path allready exists
-    if os.path.isdir(sensoruserpath):
+    # Check if the use sensor allready exists
+    if not force and os.path.isdir(sensoruserpath):
         return
 
     if os.path.isdir(disableduserpath):
         move(disableduserpath, sensoruserpath)
     else:
+        if os.path.isdir(sensoruserpath):
+            rmtree(sensoruserpath)
         copytree(sensorlibrarypath, sensoruserpath)
 
 
-def disableSensorTemplateToUserBin(sensorname, **kwargs):
+def disableSensorTemplateToUserBin(sensorname):
     """Copy sensor template to user script folder"""
 
     # Sensor configuration filename
@@ -287,7 +289,7 @@ def disableSensorTemplateToUserBin(sensorname, **kwargs):
     move(srcuserpath, disablesensoruserpath)
 
 
-def enableSensorConfig(sensorname, sensortype, **kwargs):
+def enableSensorConfig(sensorname, sensortype):
     """Create sensor YAML configuration file"""
 
     # Sensor configuration filename
@@ -396,7 +398,7 @@ def getEnabledSensorNames():
     return enabledsensors
 
 
-def enableSenderConfig(sendername, **kwargs):
+def enableSenderConfig(sendername):
     """Enable sender YAML configuration file"""
 
     # Sender configuration filename
@@ -421,7 +423,7 @@ def enableSenderConfig(sendername, **kwargs):
     print "%(sendername)s sender configuration in '%(dstconf)s'" % locals()
 
 
-def disableSenderConfig(sendername, **kwargs):
+def disableSenderConfig(sendername):
     """Disable sender YAML configuration file"""
 
     # Sender configuration filename

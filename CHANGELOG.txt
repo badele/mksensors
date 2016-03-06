@@ -4,6 +4,8 @@ Changelog
 Version 0.0.2 (2016-01-31)
 --------------------------
 
+ * Add mksensors default configuration file
+ * Add logging system
  * Add list sensors commandline
  * Add list senders commandline
  * Add check feature commandline
@@ -18,7 +20,7 @@ Version 0.0.2 (2016-01-31)
     * Archlinux
     * Debian/Ubuntu
     * Fedora
- * In default datas stored in /var/lib/mksensors
+ * Datas stored in /var/lib/mksensors
  * Check sender installation requirements
  * Add sender plugins
     * rrd

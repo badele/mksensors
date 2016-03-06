@@ -67,6 +67,9 @@ def enableSensor(sensorname, sensorlibraryname, **kwargs):
 
     _LOGGER.info('enableSensor %(sensorname)s(%(sensorlibraryname)s)' % locals())
 
+    # Command line options
+    force = '--force' in kwargs
+
     # Check packages installation
     modulename = 'mksensors.templates.sensor.%s' % sensorlibraryname
     mod = mks.loadModule(modulename)
@@ -74,10 +77,10 @@ def enableSensor(sensorname, sensorlibraryname, **kwargs):
     sensorobj.checkRequirements()
 
     # Create Supervisor configuration
-    mks.enableSupervisorConf(sensorname=sensorname, sensorlibraryname=sensorlibraryname)
+    mks.enableSupervisorConf(sensorname=sensorname, sensorlibraryname=sensorlibraryname, force=force)
 
     # Copy module sensor code to bin folder
-    mks.copySensorTemplateToUserBin(sensorname=sensorname, sensorlibraryname=sensorlibraryname)
+    mks.copySensorTemplateToUserBin(sensorname=sensorname, sensorlibraryname=sensorlibraryname, force=force)
 
     # Create sensor user configuration
     mks.enableSensorConfig(sensorname=sensorname, sensortype=sensorlibraryname)
@@ -195,8 +198,6 @@ def enableSender(sendername, **kwargs):
     # Create sensor user configuration
     mks.enableSenderConfig(
         sendername=sendername,
-        #params=params,
-        **kwargs
     )
 
     # Check mksensors configuration
@@ -208,8 +209,6 @@ def disableSender(sendertype, **kwargs):
     # Create sensor user configuration
     mks.disableSenderConfig(
         sendername=sendertype,
-        #params=params,
-        **kwargs
     )
 
 
